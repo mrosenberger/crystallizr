@@ -29,7 +29,7 @@ Vector.prototype.normalize = function() {
 
 // Point class
 
-var Point = function(position_vector, velocity_vector, color, radius, repulsion_distance, repulsion_strength, repulsion_distance, attraction_strength, attraction_distance) {
+var Point = function(position_vector, velocity_vector, color, radius, repulsion_distance, repulsion_strength, attraction_distance, attraction_strength) {
   this.position = position_vector;
   this.velocity = velocity_vector;
   this.color = color;
@@ -67,8 +67,16 @@ World.prototype.tick = function(delta) {
       if (i == j) continue; // Skip if we're on the same point
       var target = this.points[j];
       var point_to_target = point.position.subtract(target.position);
-      var repulsion_scalar = point.repulsion_strength * 1.0 / point_to_target.magnitude();
-      target.accelerate(point_to_target.scale(repulsion_scalar));
+      var distance = point_to_target.magnitude();
+      //if (distance < point.repulsion_distance) {
+      //  var repulsion_scalar = -point.repulsion_strength / distance;
+      //  target.accelerate(point_to_target.scale(repulsion_scalar));
+      //}
+      //if (distance > point.attraction_distance) {
+      //  var attraction_scalar = point.attraction_strength / distance;
+      //  target.accelerate(point_to_target.scale(attraction_scalar));
+      //}
+      var repulsion_scaslar = - point.repulsion_strength * ()
     }
 
     // Update current point position
@@ -110,10 +118,10 @@ canvas.width = width;
 canvas.height = height;
 
 var world = new World(width, height);
-world.add_point(new Point(new Vector(130, 130), new Vector(0.1, 0.2), "#00FF00", 5, 1, 0.01, 1, 1));
-world.add_point(new Point(new Vector(160, 155), new Vector(0.1, -0.2), "#FF0000", 5, 1, 0.01, 1, 1));
+world.add_point(new Point(new Vector(148, 130), new Vector(0.0, 0.0), "#00FF00", 5, 11, 0.1, 10, 0.01));
+world.add_point(new Point(new Vector(160, 130), new Vector(0.0, 0.0), "#FF0000", 5, 11, 0.1, 10, 0.01));
 
 window.setInterval(function() {
   world.tick(1);
   render_world(world, context);
-}, 1);
+}, 5);
