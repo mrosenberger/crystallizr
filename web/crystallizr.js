@@ -60,7 +60,7 @@ World.prototype.add_point = function(point) {
 World.prototype.update_velocities = function(delta) {
   for (var i=0; i < this.points.length; i++) {
     var point = this.points[i];
-    console.log(point.position);
+    //console.log(point.position);
     for (var j=0; j < this.points.length; j++) {
       if (i == j) continue; // Skip if we're on the same point
       var target = this.points[j];
@@ -97,19 +97,19 @@ World.prototype.bound_points = function(delta) {
   for (var i=0; i < this.points.length; i++) {
     var point = this.points[i];
     if (point.position.x > this.x_size) {
-      point.velocity.x *= -1;
+      point.velocity.x *= -0.1;
       point.position.x = this.x_size - point.radius;
     }
     if (point.position.x < 0) {
-      point.velocity.x *= -1;
+      point.velocity.x *= -0.1;
       point.position.x = point.radius;
     }
     if (point.position.y > this.y_size) {
-      point.velocity.y *= -1;
+      point.velocity.y *= -0.1;
       point.position.y = this.y_size - point.radius;
     }
     if (point.position.y < 0) {
-      point.velocity.y *= -1;
+      point.velocity.y *= -0.1;
       point.position.y = point.radius;
     }
   }
@@ -157,7 +157,7 @@ function get_random_color() {
 };
 
 function render_world(world, context) {
-  context.fillStyle = "rgba(255, 255, 255, 0.1)";
+  context.fillStyle = "rgba(0, 0, 0, 0.3)";
   context.fillRect(0, 0, context.canvas.width, context.canvas.height);
   for (var i=0; i < world.points.length; i++) {
     var point = world.points[i];
@@ -181,9 +181,26 @@ canvas.height = window.height;
 
 var world = new World(width, height);
 
-canvas.addEventListener("mousedown", (function(event) { 
-    world.add_point(new Point(new Vector(event.pageX, event.pageY), new Vector(0.0, 0.0), get_random_color(), 5, 50.0));
-  }), false);
+var handleMouseUp = function(event) { 
+  if (event.button == 0) {
+    world.add_point(new Point(new Vector(event.pageX, event.pageY), new Vector(event.pageX, event.pageY).subtract(new Vector(document.tmpX, document.tmpY)).scale(0.2), get_random_color(), 5, 50.0));
+    canvas.style.cursor = "crosshair";
+  } else {
+  }
+};
+
+var handleMouseDown = function(event) {
+  if (event.button == 0) {
+    document.tmpX = event.pageX;
+    document.tmpY = event.pageY;
+    canvas.style.cursor = "move";
+  } else {
+  }
+};
+
+canvas.addEventListener("mouseup", handleMouseUp, false);
+
+canvas.addEventListener("mousedown", handleMouseDown, false);
 
 window.setInterval(function() {
   world.tick(1);
