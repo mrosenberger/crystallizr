@@ -66,9 +66,8 @@ World.prototype.update_velocities = function(delta) {
       var point_to_target = point.position.subtract(target.position);
       var distance = point_to_target.magnitude();
       var from_balance = Math.abs(distance - point.balance_distance);
-      //console.log("Distance is : " + from_balance);
       if (distance > point.balance_distance) { // Point is outside balance, attract
-        target.accelerate(point_to_target.scale(from_balance).scale(0.0001));
+        target.accelerate(point_to_target.scale(from_balance).scale(0.00001));
       } else { // Point is inside balance, repel
         target.accelerate(point_to_target.scale(from_balance).scale(-0.02));
       }
@@ -79,10 +78,22 @@ World.prototype.update_velocities = function(delta) {
 World.prototype.bound_points = function(delta) {
   for (var i=0; i < this.points.length; i++) {
     var point = this.points[i];
-    if (point.position.x > this.x_size) point.velocity.x *= -1;
-    if (point.position.x < 0) point.velocity.x *= -1;
-    if (point.position.y > this.y_size) point.velocity.y *= -1;
-    if (point.position.y < 0) point.velocity.y *= -1;
+    if (point.position.x > this.x_size) {
+      point.velocity.x *= -1;
+      point.position.x = this.x_size - point.radius;
+    }
+    if (point.position.x < 0) {
+      point.velocity.x *= -1;
+      point.position.x = point.radius;
+    }
+    if (point.position.y > this.y_size) {
+      point.velocity.y *= -1;
+      point.position.y = this.y_size - point.radius;
+    }
+    if (point.position.y < 0) {
+      point.velocity.y *= -1;
+      point.position.y = point.radius;
+    }
   }
 };
 
@@ -90,6 +101,7 @@ World.prototype.apply_drag_to_points = function(delta) {
   for (var i=0; i < this.points.length; i++) {
     var point = this.points[i];
     point.velocity = point.velocity.scale(0.9 * delta);
+    //if (point.velocity.magnitude() > 0.0001) point.velocity = point.velocity.scale(1.0 / point.velocity.magnitude());
   }
 };
 
@@ -100,8 +112,16 @@ World.prototype.update_positions = function(delta) {
   }
 };
 
+World.prototype.apply_gravity_to_points = function(delta) {
+  for (var i=0; i < this.points.length; i++) {
+    var point = this.points[i];
+    point.accelerate(new Vector(0, 0.4));
+  }
+}
+
 World.prototype.tick = function(delta) {
   this.update_velocities(delta);
+  this.apply_gravity_to_points(delta);
   this.update_positions(delta);
   this.bound_points(delta);
   this.apply_drag_to_points(delta);
@@ -109,8 +129,18 @@ World.prototype.tick = function(delta) {
 
 // Rendering
 
+function get_random_color() {
+  var letters = "0123456789ABCDEF".split("");
+  var color = "#";
+  for (var i = 0; i < 6; i++ ) {
+      color += letters[Math.round(Math.random() * 15)];
+  }
+  return color;
+};
+
 function render_world(world, context) {
-  context.clearRect(0, 0, context.canvas.width, context.canvas.height);
+  context.fillStyle = "rgba(255, 255, 255, 0.1)";
+  context.fillRect(0, 0, context.canvas.width, context.canvas.height);
   for (var i=0; i < world.points.length; i++) {
     var point = world.points[i];
     context.fillStyle = point.color;
@@ -134,15 +164,9 @@ canvas.height = height;
 var world = new World(width, height);
 
 canvas.addEventListener("mousedown", (function(event) { 
-    world.add_point(new Point(new Vector(event.pageX, event.pageY), new Vector(0.0, 0.0), "#FF0000", 5, 40.0));
+    world.add_point(new Point(new Vector(event.pageX, event.pageY), new Vector(0.0, 0.0), get_random_color(), 5, 50.0));
   }), false);
 
-//world.add_point(new Point(new Vector(130.0, 130.0), new Vector(0.0, 0.0), "#00FF00", 5, 40.0));
-//world.add_point(new Point(new Vector(200.0, 150.0), new Vector(0.0, 0.0), "#FF0000", 5, 40.0));
-
-//for (var i=0; i < 20; i++) {
-//  world.add_point(new Point(new Vector(Math.floor(Math.random() * 200), Math.floor(Math.random() * 200)), new Vector(0.0, 0.0), "#FF0000", 5, 40.0));
-//}
 window.setInterval(function() {
   world.tick(1);
   render_world(world, context);
