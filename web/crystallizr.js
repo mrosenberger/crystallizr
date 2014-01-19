@@ -23,8 +23,8 @@ Vector.prototype.scale = function(scalar) {
 };
 
 Vector.prototype.normalize = function() {
-  var magnitude = this.magnitude;
-  return new Vector(this.x / this.magnitude, this.y / this.magnitude);
+  var magnitude = this.magnitude();
+  return new Vector(this.x / magnitude, this.y / magnitude);
 }; 
 
 // Point class
@@ -60,25 +60,35 @@ World.prototype.add_point = function(point) {
 World.prototype.update_velocities = function(delta) {
   for (var i=0; i < this.points.length; i++) {
     var point = this.points[i];
+    console.log(point.position);
     for (var j=0; j < this.points.length; j++) {
       if (i == j) continue; // Skip if we're on the same point
       var target = this.points[j];
       var point_to_target = point.position.subtract(target.position);
       var distance = point_to_target.magnitude();
 
-      /*if (distance > point.balance_distance) {
-
-      } else {
-
-      }*/
       var from_balance = Math.abs(distance - point.balance_distance);
       if (distance > (point.balance_distance * 2)) {
 
       } else if (distance > point.balance_distance) { // Point is outside balance, attract
         target.accelerate(point_to_target.scale(from_balance).scale(0.0001));
       } else { // Point is inside balance, repel
-        target.accelerate(point_to_target.scale(from_balance).scale(-0.02));
+        target.accelerate(point_to_target.scale(from_balance).scale(-0.01));
       }
+
+      //var adjusted = 
+      //var scaling_factor = Math.pow(Math.E, -distance) / (Math.pow(distance-1.0), 2.0);
+      //var norm_dist = distance / point.balance_distance;
+      //var scaling_factor = 2.0 * Math.pow(Math.E, -norm_dist) * (norm_dist - 1.0) - Math.pow(Math.E, -norm_dist) * Math.pow(norm_dist-1, 2.0);
+      //scaling_factor = scaling_factor * 1.0;
+      //target.accelerate(point_to_target.normalize().scale(scaling_factor));
+      /*if (distance > (point.balance_distance * 2)) {
+
+      } else if (distance > point.balance_distance) { // Point is outside balance, attract
+        target.accelerate(point_to_target.normalize().scale(scaling_factor));
+      } else { // Point is inside balance, repel
+        target.accelerate(point_to_target.normalize().scale(scaling_factor));
+      }*/
     }
   }
 };
@@ -129,7 +139,6 @@ World.prototype.apply_gravity_to_points = function(delta) {
 
 World.prototype.tick = function(delta) {
   this.update_velocities(delta);
-
   this.bound_points(delta);
   this.apply_gravity_to_points(delta);
   this.apply_drag_to_points(delta);
@@ -166,8 +175,8 @@ var height = 600;
 var canvas = document.getElementById("canvas-0");
 var context = canvas.getContext("2d");
 
-canvas.width = width;
-canvas.height = height;
+canvas.width = window.width;
+canvas.height = window.height;
 
 
 var world = new World(width, height);
