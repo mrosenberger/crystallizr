@@ -65,9 +65,17 @@ World.prototype.update_velocities = function(delta) {
       var target = this.points[j];
       var point_to_target = point.position.subtract(target.position);
       var distance = point_to_target.magnitude();
+
+      /*if (distance > point.balance_distance) {
+
+      } else {
+
+      }*/
       var from_balance = Math.abs(distance - point.balance_distance);
-      if (distance > point.balance_distance) { // Point is outside balance, attract
-        target.accelerate(point_to_target.scale(from_balance).scale(0.00001));
+      if (distance > (point.balance_distance * 2)) {
+
+      } else if (distance > point.balance_distance) { // Point is outside balance, attract
+        target.accelerate(point_to_target.scale(from_balance).scale(0.0001));
       } else { // Point is inside balance, repel
         target.accelerate(point_to_target.scale(from_balance).scale(-0.02));
       }
@@ -115,16 +123,17 @@ World.prototype.update_positions = function(delta) {
 World.prototype.apply_gravity_to_points = function(delta) {
   for (var i=0; i < this.points.length; i++) {
     var point = this.points[i];
-    point.accelerate(new Vector(0, 0.4));
+    point.accelerate(new Vector(0, 0.1));
   }
 }
 
 World.prototype.tick = function(delta) {
   this.update_velocities(delta);
-  this.apply_gravity_to_points(delta);
-  this.update_positions(delta);
+
   this.bound_points(delta);
+  this.apply_gravity_to_points(delta);
   this.apply_drag_to_points(delta);
+  this.update_positions(delta);
 };
 
 // Rendering
@@ -151,8 +160,8 @@ function render_world(world, context) {
   }
 };
 
-var width = 1000;
-var height = 400;
+var width = 1300;
+var height = 600;
 
 var canvas = document.getElementById("canvas-0");
 var context = canvas.getContext("2d");
@@ -170,4 +179,4 @@ canvas.addEventListener("mousedown", (function(event) {
 window.setInterval(function() {
   world.tick(1);
   render_world(world, context);
-}, 1);
+}, 0);
