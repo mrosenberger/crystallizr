@@ -1,80 +1,119 @@
 // Vector class
 
-function Vector(x, y) {
-	this.x = x;
+var Vector = function(x, y) {
+  this.x = x;
   this.y = y;
 };
 
-Vector.prototype.add(other) {
+Vector.prototype.add = function(other) {
   return new Vector(this.x + other.x, this.y + other.y);
 };
 
-Vector.prototype.subtract(other) {
+Vector.prototype.subtract = function(other) {
   return new Vector(this.x - other.x, this.y - other.y);
 };
 
-Vector.prototype.magnitude() {
-  return Math.sqrt(Math.pow(this.x, 2.0), Math.pow(this.y, 2.0));
+Vector.prototype.magnitude = function() {
+  return Math.sqrt(Math.pow(this.x, 2.0) + Math.pow(this.y, 2.0));
 };
 
-Vector.prototype.scale(scalar) {
+
+Vector.prototype.scale = function(scalar) {
   return new Vector(this.x * scalar, this.y * scalar);
 };
 
-Vector.prototype.normalize() {
+Vector.prototype.normalize = function() {
   var magnitude = this.magnitude;
   return new Vector(this.x / this.magnitude, this.y / this.magnitude);
 }; 
 
 // Point class
 
-function Point(position_vector, velocity_vector, repulsion_distance, repulsion_strength, repulsion_distance, attraction_strength, attraction_distance) {
+var Point = function(position_vector, velocity_vector, color, radius, repulsion_distance, repulsion_strength, repulsion_distance, attraction_strength, attraction_distance) {
   this.position = position_vector;
   this.velocity = velocity_vector;
+  this.color = color;
+  this.radius = radius;
   this.repulsion_strength = repulsion_strength;
   this.repulsion_distance = repulsion_distance;
   this.attraction_strength = attraction_strength;
   this.attraction_distance = attraction_distance;
 };
 
-Point.prototype.update_position(delta) {
+Point.prototype.update_position = function(delta) {
   this.position = this.position.add(this.velocity.scale(delta));
 };
 
-Point.prototype.accelerate(acceleration_vector) {
+Point.prototype.accelerate = function(acceleration_vector) {
   this.velocity = this.velocity.add(acceleration_vector);
 };
 
 // World class
 
-function World(x_size, y_size) {
+var World = function(x_size, y_size) {
   this.x_size = x_size;
   this.y_size = y_size;
   this.points = [];
 };
 
-World.prototype.add_point(point) {
+World.prototype.add_point = function(point) {
   this.points.push(point);
 };
 
-World.prototype.tick(delta) {
+World.prototype.tick = function(delta) {
   for (var i=0; i < this.points.length; i++) {
     var point = this.points[i];
     for (var j=0; j < this.points.length; j++) {
       if (i == j) continue; // Skip if we're on the same point
       var target = this.points[j];
-      var point_to_target = point.
+      var point_to_target = point.position.subtract(target.position);
+      var repulsion_scalar = point.repulsion_strength * 1.0 / point_to_target.magnitude();
+      target.accelerate(point_to_target.scale(repulsion_scalar));
     }
+
+    // Update current point position
     point.update_position(delta);
+
+    // Bound to the world
+    if (point.position.x > this.x_size) point.velocity.x *= -1;
+    if (point.position.x < 0) point.velocity.x *= -1;
+    if (point.position.y > this.y_size) point.velocity.y *= -1;
+    if (point.position.y < 0) point.velocity.y *= -1;
+
+    // Apply drag
+    point.velocity = point.velocity.scale(0.999);
+    
   }
 };
 
 // Rendering
 
+function render_world(world, context) {
+  context.clearRect(0, 0, context.canvas.width, context.canvas.height);
+  for (var i=0; i < world.points.length; i++) {
+    var point = world.points[i];
+    context.fillStyle = point.color;
+    context.beginPath();
+    context.arc(point.position.x, point.position.y, point.radius, 0, Math.PI*2, true); 
+    context.closePath();
+    context.fill();
+  }
+};
+
+var width = 300;
+var height = 300;
+
 var canvas = document.getElementById("canvas-0");
-console.log(canvas);
 var context = canvas.getContext("2d");
-context.fillStyle="#FF0000";
-var x = 5;
-var y = 5;
-context.fillRect(x, y, x+1, y+1);
+
+canvas.width = width;
+canvas.height = height;
+
+var world = new World(width, height);
+world.add_point(new Point(new Vector(130, 130), new Vector(0.1, 0.2), "#00FF00", 5, 1, 0.01, 1, 1));
+world.add_point(new Point(new Vector(160, 155), new Vector(0.1, -0.2), "#FF0000", 5, 1, 0.01, 1, 1));
+
+window.setInterval(function() {
+  world.tick(1);
+  render_world(world, context);
+}, 1);
