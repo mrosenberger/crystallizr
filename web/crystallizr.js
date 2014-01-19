@@ -29,15 +29,12 @@ Vector.prototype.normalize = function() {
 
 // Point class
 
-var Point = function(position_vector, velocity_vector, color, radius, repulsion_distance, repulsion_strength, attraction_distance, attraction_strength) {
+var Point = function(position_vector, velocity_vector, color, radius, balance_distance) {
   this.position = position_vector;
   this.velocity = velocity_vector;
   this.color = color;
   this.radius = radius;
-  this.repulsion_strength = repulsion_strength;
-  this.repulsion_distance = repulsion_distance;
-  this.attraction_strength = attraction_strength;
-  this.attraction_distance = attraction_distance;
+  this.balance_distance = balance_distance;
 };
 
 Point.prototype.update_position = function(delta) {
@@ -60,7 +57,7 @@ World.prototype.add_point = function(point) {
   this.points.push(point);
 };
 
-World.prototype.tick = function(delta) {
+World.prototype.update_velocities = function(delta) {
   for (var i=0; i < this.points.length; i++) {
     var point = this.points[i];
     for (var j=0; j < this.points.length; j++) {
@@ -68,30 +65,46 @@ World.prototype.tick = function(delta) {
       var target = this.points[j];
       var point_to_target = point.position.subtract(target.position);
       var distance = point_to_target.magnitude();
-      //if (distance < point.repulsion_distance) {
-      //  var repulsion_scalar = -point.repulsion_strength / distance;
-      //  target.accelerate(point_to_target.scale(repulsion_scalar));
-      //}
-      //if (distance > point.attraction_distance) {
-      //  var attraction_scalar = point.attraction_strength / distance;
-      //  target.accelerate(point_to_target.scale(attraction_scalar));
-      //}
-      var repulsion_scaslar = - point.repulsion_strength * ()
+      var from_balance = Math.abs(distance - point.balance_distance);
+      //console.log("Distance is : " + from_balance);
+      if (distance > point.balance_distance) { // Point is outside balance, attract
+        target.accelerate(point_to_target.scale(from_balance).scale(0.0001));
+      } else { // Point is inside balance, repel
+        target.accelerate(point_to_target.scale(from_balance).scale(-0.02));
+      }
     }
+  }
+};
 
-    // Update current point position
-    point.update_position(delta);
-
-    // Bound to the world
+World.prototype.bound_points = function(delta) {
+  for (var i=0; i < this.points.length; i++) {
+    var point = this.points[i];
     if (point.position.x > this.x_size) point.velocity.x *= -1;
     if (point.position.x < 0) point.velocity.x *= -1;
     if (point.position.y > this.y_size) point.velocity.y *= -1;
     if (point.position.y < 0) point.velocity.y *= -1;
-
-    // Apply drag
-    point.velocity = point.velocity.scale(0.999);
-    
   }
+};
+
+World.prototype.apply_drag_to_points = function(delta) {
+  for (var i=0; i < this.points.length; i++) {
+    var point = this.points[i];
+    point.velocity = point.velocity.scale(0.9 * delta);
+  }
+};
+
+World.prototype.update_positions = function(delta) {
+  for (var i=0; i < this.points.length; i++) {
+    var point = this.points[i];
+    point.update_position(delta);
+  }
+};
+
+World.prototype.tick = function(delta) {
+  this.update_velocities(delta);
+  this.update_positions(delta);
+  this.bound_points(delta);
+  this.apply_drag_to_points(delta);
 };
 
 // Rendering
@@ -108,8 +121,8 @@ function render_world(world, context) {
   }
 };
 
-var width = 300;
-var height = 300;
+var width = 1000;
+var height = 400;
 
 var canvas = document.getElementById("canvas-0");
 var context = canvas.getContext("2d");
@@ -117,11 +130,20 @@ var context = canvas.getContext("2d");
 canvas.width = width;
 canvas.height = height;
 
-var world = new World(width, height);
-world.add_point(new Point(new Vector(148, 130), new Vector(0.0, 0.0), "#00FF00", 5, 11, 0.1, 10, 0.01));
-world.add_point(new Point(new Vector(160, 130), new Vector(0.0, 0.0), "#FF0000", 5, 11, 0.1, 10, 0.01));
 
+var world = new World(width, height);
+
+canvas.addEventListener("mousedown", (function(event) { 
+    world.add_point(new Point(new Vector(event.pageX, event.pageY), new Vector(0.0, 0.0), "#FF0000", 5, 40.0));
+  }), false);
+
+//world.add_point(new Point(new Vector(130.0, 130.0), new Vector(0.0, 0.0), "#00FF00", 5, 40.0));
+//world.add_point(new Point(new Vector(200.0, 150.0), new Vector(0.0, 0.0), "#FF0000", 5, 40.0));
+
+//for (var i=0; i < 20; i++) {
+//  world.add_point(new Point(new Vector(Math.floor(Math.random() * 200), Math.floor(Math.random() * 200)), new Vector(0.0, 0.0), "#FF0000", 5, 40.0));
+//}
 window.setInterval(function() {
   world.tick(1);
   render_world(world, context);
-}, 5);
+}, 1);
