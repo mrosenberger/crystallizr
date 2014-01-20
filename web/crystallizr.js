@@ -75,20 +75,6 @@ World.prototype.update_velocities = function(delta) {
       } else { // Point is inside balance, repel
         target.accelerate(point_to_target.scale(from_balance).scale(-0.01));
       }
-
-      //var adjusted = 
-      //var scaling_factor = Math.pow(Math.E, -distance) / (Math.pow(distance-1.0), 2.0);
-      //var norm_dist = distance / point.balance_distance;
-      //var scaling_factor = 2.0 * Math.pow(Math.E, -norm_dist) * (norm_dist - 1.0) - Math.pow(Math.E, -norm_dist) * Math.pow(norm_dist-1, 2.0);
-      //scaling_factor = scaling_factor * 1.0;
-      //target.accelerate(point_to_target.normalize().scale(scaling_factor));
-      /*if (distance > (point.balance_distance * 2)) {
-
-      } else if (distance > point.balance_distance) { // Point is outside balance, attract
-        target.accelerate(point_to_target.normalize().scale(scaling_factor));
-      } else { // Point is inside balance, repel
-        target.accelerate(point_to_target.normalize().scale(scaling_factor));
-      }*/
     }
   }
 };
@@ -118,7 +104,7 @@ World.prototype.bound_points = function(delta) {
 World.prototype.apply_drag_to_points = function(delta) {
   for (var i=0; i < this.points.length; i++) {
     var point = this.points[i];
-    point.velocity = point.velocity.scale(0.9 * delta);
+    point.velocity = point.velocity.scale(0.95 * delta);
     //if (point.velocity.magnitude() > 0.0001) point.velocity = point.velocity.scale(1.0 / point.velocity.magnitude());
   }
 };
@@ -139,7 +125,7 @@ World.prototype.apply_gravity_to_points = function(delta) {
 
 World.prototype.tick = function(delta) {
   this.update_velocities(delta);
-  this.apply_gravity_to_points(delta);
+  if (!(mouse_pressed && shift_pressed)) this.apply_gravity_to_points(delta);
   this.bound_points(delta);
   this.apply_drag_to_points(delta);
   this.update_positions(delta);
@@ -157,7 +143,11 @@ function get_random_color() {
 };
 
 function render_world(world, context) {
-  context.fillStyle = "rgba(0, 0, 0, 0.1)";
+  if (mouse_pressed && shift_pressed) {
+    context.fillStyle = "rgba(0, 0, 0, 0.5)";
+  } else {
+    context.fillStyle = "rgba(0, 0, 0, 0.1)";
+  }
   context.fillRect(0, 0, context.canvas.width, context.canvas.height);
   for (var i=0; i < world.points.length; i++) {
     var point = world.points[i];
@@ -180,8 +170,15 @@ var get_offset = function(el) {
     return { top: _y, left: _x };
 };
 
-var width = 1300;
-var height = 600;
+var w = window,
+    d = document,
+    e = d.documentElement,
+    g = d.getElementsByTagName('body')[0],
+    x = w.innerWidth || e.clientWidth || g.clientWidth,
+    y = w.innerHeight|| e.clientHeight|| g.clientHeight;
+
+var width = x * 0.95;
+var height = y * 0.9;
 
 var canvas = document.getElementById("canvas-0");
 var context = canvas.getContext("2d");
@@ -190,33 +187,68 @@ var canvas_offset = get_offset(canvas);
 var x_offset = canvas_offset.left;
 var y_offset = canvas_offset.top;
 
-canvas.width = window.width;
-canvas.height = window.height;
+var drag_x = 0;
+var drag_y = 0;
+
+var shift_pressed = false;
+var shift_was_pressed_before_mouse_up = false;
+var mouse_pressed = false;
+
+canvas.width = width;
+canvas.height = height;
 
 var world = new World(width, height);
 
 var handleMouseUp = function(event) { 
-  if (event.button == 0) {
-    world.add_point(new Point(new Vector(document.tmpX, document.tmpY), 
-                              (new Vector(event.pageX - x_offset, event.pageY - y_offset)).subtract(new Vector(document.tmpX, document.tmpY)).scale(0.50), 
-                              get_random_color(), 5, 50.0));
-    canvas.style.cursor = "crosshair";
+  mouse_pressed = false;
+  canvas.style.cursor = "crosshair";
+  if (shift_pressed) {
+  
   } else {
+    world.add_point(new Point(new Vector(drag_x, drag_y), 
+                              (new Vector(event.pageX - x_offset, event.pageY - y_offset)).subtract(new Vector(drag_x, drag_y)).scale(0.50), 
+                              get_random_color(), 5, 50.0));
+    
   }
 };
 
 var handleMouseDown = function(event) {
-  if (event.button == 0) {
-    document.tmpX = event.pageX - x_offset;
-    document.tmpY = event.pageY - y_offset;
-    canvas.style.cursor = "move";
-  } else {
+  mouse_pressed = true;
+  drag_x = event.pageX - x_offset;
+  drag_y = event.pageY - y_offset;
+  canvas.style.cursor = "move";
+};
+
+var handleKeyDown = function(event) {
+  if (event.shiftKey) {
+    shift_pressed = true;
   }
 };
 
-canvas.addEventListener("mouseup", handleMouseUp, false);
+var handleKeyUp = function(event) {
+  if (event.keyCode == 16) {
+    shift_pressed = false;
+  }
+};
 
+var handleMouseMove = function(event) {
+  var real_x = event.clientX - x_offset;
+  var real_y = event.clientY - y_offset;
+  if (shift_pressed && mouse_pressed) {
+    for (var i=0; i < world.points.length; i++) {
+      var point = world.points[i];
+      point.accelerate((new Vector(real_x, real_y).subtract(new Vector(drag_x, drag_y))).scale(0.1));
+    }
+    drag_x = real_x;
+    drag_y = real_y;
+  }
+}
+
+canvas.addEventListener("mouseup", handleMouseUp, false);
 canvas.addEventListener("mousedown", handleMouseDown, false);
+canvas.addEventListener("keyup", handleKeyUp, false);
+canvas.addEventListener("keydown", handleKeyDown, false);
+canvas.addEventListener("mousemove", handleMouseMove, false);
 
 context.fillStyle = "green";
 context.fillRect(0, 0, context.canvas.width, context.canvas.height);
