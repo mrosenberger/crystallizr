@@ -72,16 +72,20 @@ World.prototype.update_velocities = function(delta) {
       } else if (distance > point.balance_distance) { // Point is outside balance, attract
         target.accelerate(point_to_target.scale(from_balance).scale(sim_config.attraction_scalar));
         if (sim_config.draw_force_lines) {
+          context.beginPath();
           context.moveTo(point.position.x, point.position.y);
           context.lineTo(target.position.x, target.position.y);
+          context.closePath();
           context.strokeStyle = "green";
           context.stroke();
         }
       } else { // Point is inside balance, repel
         target.accelerate(point_to_target.scale(from_balance).scale(sim_config.repulsion_scalar));
         if (sim_config.draw_force_lines) {
+          context.beginPath();
           context.moveTo(point.position.x, point.position.y);
           context.lineTo(target.position.x, target.position.y);
+          context.closePath();
           context.strokeStyle = "red";
           context.stroke();
         }
@@ -90,29 +94,33 @@ World.prototype.update_velocities = function(delta) {
   }
 };
 
-World.prototype.bound_points_deprecated = function(delta) {
+World.prototype.bound_points = function(delta) {
   for (var i=0; i < this.points.length; i++) {
     var point = this.points[i];
-    if (point.position.x > this.x_size) {
-      point.velocity.x *= -0.1;
+    if (point.position.x > this.x_size - point.radius) {
+      point.velocity.x *= sim_config.wall_bounce_offending_coordinate_multiplier;
+      point.velocity.y *= sim_config.wall_bounce_non_offending_coordinate_multiplier;
       point.position.x = this.x_size - point.radius;
     }
-    if (point.position.x < 0) {
-      point.velocity.x *= -0.1;
+    if (point.position.x < point.radius) {
+      point.velocity.x *= sim_config.wall_bounce_offending_coordinate_multiplier;
+      point.velocity.y *= sim_config.wall_bounce_non_offending_coordinate_multiplier;
       point.position.x = point.radius;
     }
-    if (point.position.y > this.y_size) {
-      point.velocity.y *= -0.1;
+    if (point.position.y > this.y_size - point.radius) {
+      point.velocity.y *= sim_config.wall_bounce_offending_coordinate_multiplier;
+      point.velocity.x *= sim_config.wall_bounce_non_offending_coordinate_multiplier;
       point.position.y = this.y_size - point.radius;
     }
-    if (point.position.y < 0) {
-      point.velocity.y *= -0.1;
+    if (point.position.y < point.radius) {
+      point.velocity.y *= sim_config.wall_bounce_offending_coordinate_multiplier;
+      point.velocity.x *= sim_config.wall_bounce_non_offending_coordinate_multiplier;
       point.position.y = point.radius;
     }
   }
 };
 
-World.prototype.bound_points = function(delta) {
+World.prototype.bound_points_deprecated = function(delta) {
   for (var i=0; i < this.points.length; i++) {
     var point = this.points[i];
     var friction = 0; // This is dumb. Might just swap out with a =[0, 0] at some point
@@ -219,13 +227,15 @@ var height = y * 0.9;
 var sim_config = {
   attraction_scalar: 0.0001,
   repulsion_scalar: -0.01, 
-  drag_multiplier: 0.95,
+  drag_multiplier: 0.94,
   gravity_strength: 0.1,
   interaction_cutoff_in_equilibriums: 2.0,
   equilibrium_distance: 50.0,
-  point_radius: 5.0,
+  point_radius: 2,
   point_shooting_scalar: 0.3,
-  draw_force_lines: false
+  draw_force_lines: true,
+  wall_bounce_offending_coordinate_multiplier: 0,
+  wall_bounce_non_offending_coordinate_multiplier: 0
 };
 
 // Canvas and context
@@ -291,9 +301,11 @@ var handleMouseMove = function(event) {
     drag_y = real_y;
   } else if (mouse_pressed) {
     // Draw lines showing point to be thrown
+    context.beginPath();
     context.moveTo(drag_x, drag_y);
     context.lineTo(real_x, real_y);
-    context.strokeStyle = "green";
+    context.closePath();
+    context.strokeStyle = "orange";
     context.stroke();
   }
 }
