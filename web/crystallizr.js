@@ -67,12 +67,24 @@ World.prototype.update_velocities = function(delta) {
       var point_to_target = point.position.subtract(target.position);
       var distance = point_to_target.magnitude();
       var from_balance = Math.abs(distance - point.balance_distance);
-      if (distance > (point.balance_distance * 2)) {
+      if (distance > (point.balance_distance * sim_config.interaction_cutoff_in_equilibriums)) {
 
       } else if (distance > point.balance_distance) { // Point is outside balance, attract
-        target.accelerate(point_to_target.scale(from_balance).scale(0.0001));
+        target.accelerate(point_to_target.scale(from_balance).scale(sim_config.attraction_scalar));
+        if (sim_config.draw_force_lines) {
+          context.moveTo(point.position.x, point.position.y);
+          context.lineTo(target.position.x, target.position.y);
+          context.strokeStyle = "green";
+          context.stroke();
+        }
       } else { // Point is inside balance, repel
-        target.accelerate(point_to_target.scale(from_balance).scale(-0.01));
+        target.accelerate(point_to_target.scale(from_balance).scale(sim_config.repulsion_scalar));
+        if (sim_config.draw_force_lines) {
+          context.moveTo(point.position.x, point.position.y);
+          context.lineTo(target.position.x, target.position.y);
+          context.strokeStyle = "red";
+          context.stroke();
+        }
       }
     }
   }
@@ -126,8 +138,7 @@ World.prototype.bound_points = function(delta) {
 World.prototype.apply_drag_to_points = function(delta) {
   for (var i=0; i < this.points.length; i++) {
     var point = this.points[i];
-    point.velocity = point.velocity.scale(0.95 * delta);
-    //if (point.velocity.magnitude() > 0.0001) point.velocity = point.velocity.scale(1.0 / point.velocity.magnitude());
+    point.velocity = point.velocity.scale(sim_config.drag_multiplier * delta);
   }
 };
 
@@ -141,7 +152,7 @@ World.prototype.update_positions = function(delta) {
 World.prototype.apply_gravity_to_points = function(delta) {
   for (var i=0; i < this.points.length; i++) {
     var point = this.points[i];
-    point.accelerate(new Vector(0, 0.1));
+    point.accelerate(new Vector(0, sim_config.gravity_strength));
   }
 }
 
@@ -192,6 +203,7 @@ var get_offset = function(el) {
     return { top: _y, left: _x };
 };
 
+// Calculate handy values based on windows size
 var w = window,
     d = document,
     e = d.documentElement,
@@ -199,62 +211,74 @@ var w = window,
     x = w.innerWidth || e.clientWidth || g.clientWidth,
     y = w.innerHeight|| e.clientHeight|| g.clientHeight;
 
+// Height of the canvas and world
 var width = x * 0.95;
 var height = y * 0.9;
 
+// Parameters of simulation
+var sim_config = {
+  attraction_scalar: 0.0001,
+  repulsion_scalar: -0.01, 
+  drag_multiplier: 0.95,
+  gravity_strength: 0.1,
+  interaction_cutoff_in_equilibriums: 2.0,
+  equilibrium_distance: 50.0,
+  point_radius: 5.0,
+  point_shooting_scalar: 0.3,
+  draw_force_lines: false
+};
+
+// Canvas and context
 var canvas = document.getElementById("canvas-0");
 var context = canvas.getContext("2d");
 
+// Offsets based on canvas position in page
 var canvas_offset = get_offset(canvas);
 var x_offset = canvas_offset.left;
 var y_offset = canvas_offset.top;
 
+// Used as temporary variables to hold origin of a drag motion
 var drag_x = 0;
 var drag_y = 0;
 
+// Toggles to hold state of shift and mouse
 var shift_pressed = false;
-var shift_was_pressed_before_mouse_up = false;
 var mouse_pressed = false;
 
+// Initialize canvas object size based on above defined heights
 canvas.width = width;
 canvas.height = height;
 
+// Create world with above defined heights
 var world = new World(width, height);
 
+// Define event listeners
 var handleMouseUp = function(event) { 
   mouse_pressed = false;
-
   canvas.style.cursor = "crosshair";
-  if (shift_pressed) {
-  
-  } else {
+  if (!shift_pressed) {
     world.add_point(new Point(new Vector(drag_x, drag_y), 
-                              (new Vector(event.pageX - x_offset, event.pageY - y_offset)).subtract(new Vector(drag_x, drag_y)).scale(0.30), 
-                              get_random_color(), 5.0, 50.0));
-    
+                              (new Vector(event.pageX - x_offset, event.pageY - y_offset)).subtract(new Vector(drag_x, drag_y)).scale(sim_config.point_shooting_scalar), 
+                              get_random_color(), sim_config.point_radius, sim_config.equilibrium_distance));
   }
-  shift_pressed = false;
+  shift_pressed = false; // This prevents a bad race condition we were experiencing
 };
-
 var handleMouseDown = function(event) {
   mouse_pressed = true;
   drag_x = event.pageX - x_offset;
   drag_y = event.pageY - y_offset;
   canvas.style.cursor = "move";
 };
-
 var handleKeyDown = function(event) {
   if (event.shiftKey) {
     shift_pressed = true;
   }
 };
-
 var handleKeyUp = function(event) {
   if (event.keyCode == 16) {
-    //shift_pressed = false;
+    //shift_pressed = false; // We don't use this because of a race condition.
   }
 };
-
 var handleMouseMove = function(event) {
   var real_x = event.clientX - x_offset;
   var real_y = event.clientY - y_offset;
@@ -266,6 +290,7 @@ var handleMouseMove = function(event) {
     drag_x = real_x;
     drag_y = real_y;
   } else if (mouse_pressed) {
+    // Draw lines showing point to be thrown
     context.moveTo(drag_x, drag_y);
     context.lineTo(real_x, real_y);
     context.strokeStyle = "green";
@@ -273,15 +298,18 @@ var handleMouseMove = function(event) {
   }
 }
 
+// Assign event listeners
 canvas.addEventListener("mouseup", handleMouseUp, false);
 canvas.addEventListener("mousedown", handleMouseDown, false);
 canvas.addEventListener("keyup", handleKeyUp, false);
 canvas.addEventListener("keydown", handleKeyDown, false);
 canvas.addEventListener("mousemove", handleMouseMove, false);
 
+// Initially fill the screen with a color to prevent trails problem we were experiencing
 context.fillStyle = "green";
 context.fillRect(0, 0, context.canvas.width, context.canvas.height);
 
+// Start the main game loop
 window.setInterval(function() {
   world.tick(1.0);
   render_world(world, context);
