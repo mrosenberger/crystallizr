@@ -79,7 +79,7 @@ World.prototype.update_velocities = function(delta) {
   }
 };
 
-World.prototype.bound_points = function(delta) {
+World.prototype.bound_points_deprecated = function(delta) {
   for (var i=0; i < this.points.length; i++) {
     var point = this.points[i];
     if (point.position.x > this.x_size) {
@@ -96,6 +96,29 @@ World.prototype.bound_points = function(delta) {
     }
     if (point.position.y < 0) {
       point.velocity.y *= -0.1;
+      point.position.y = point.radius;
+    }
+  }
+};
+
+World.prototype.bound_points = function(delta) {
+  for (var i=0; i < this.points.length; i++) {
+    var point = this.points[i];
+    var friction = -0.5;
+    if (point.position.x > this.x_size - point.radius) {
+      point.velocity = point.velocity.scale(friction);
+      point.position.x = this.x_size - point.radius;
+    }
+    if (point.position.x < point.radius) {
+      point.velocity = point.velocity.scale(friction);
+      point.position.x = point.radius;
+    }
+    if (point.position.y > this.y_size - point.radius) {
+      point.velocity = point.velocity.scale(friction);
+      point.position.y = this.y_size - point.radius;
+    }
+    if (point.position.y < point.radius) {
+      point.velocity = point.velocity.scale(friction);
       point.position.y = point.radius;
     }
   }
@@ -146,7 +169,7 @@ function render_world(world, context) {
   if (mouse_pressed && shift_pressed) {
     context.fillStyle = "rgba(0, 0, 0, 0.5)";
   } else {
-    context.fillStyle = "rgba(0, 0, 0, 0.1)";
+    context.fillStyle = "rgba(0, 0, 0, 0.5)";
   }
   context.fillRect(0, 0, context.canvas.width, context.canvas.height);
   for (var i=0; i < world.points.length; i++) {
@@ -261,6 +284,6 @@ context.fillStyle = "green";
 context.fillRect(0, 0, context.canvas.width, context.canvas.height);
 
 window.setInterval(function() {
-  world.tick(1);
+  world.tick(1.0);
   render_world(world, context);
 }, 0);
