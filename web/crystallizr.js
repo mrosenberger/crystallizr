@@ -201,15 +201,17 @@ var world = new World(width, height);
 
 var handleMouseUp = function(event) { 
   mouse_pressed = false;
+
   canvas.style.cursor = "crosshair";
   if (shift_pressed) {
   
   } else {
     world.add_point(new Point(new Vector(drag_x, drag_y), 
-                              (new Vector(event.pageX - x_offset, event.pageY - y_offset)).subtract(new Vector(drag_x, drag_y)).scale(0.50), 
+                              (new Vector(event.pageX - x_offset, event.pageY - y_offset)).subtract(new Vector(drag_x, drag_y)).scale(0.30), 
                               get_random_color(), 5, 50.0));
     
   }
+  shift_pressed = false;
 };
 
 var handleMouseDown = function(event) {
@@ -227,7 +229,7 @@ var handleKeyDown = function(event) {
 
 var handleKeyUp = function(event) {
   if (event.keyCode == 16) {
-    shift_pressed = false;
+    //shift_pressed = false;
   }
 };
 
@@ -241,6 +243,11 @@ var handleMouseMove = function(event) {
     }
     drag_x = real_x;
     drag_y = real_y;
+  } else if (mouse_pressed) {
+    context.moveTo(drag_x, drag_y);
+    context.lineTo(real_x, real_y);
+    context.strokeStyle = "green";
+    context.stroke();
   }
 }
 
