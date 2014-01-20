@@ -139,8 +139,8 @@ World.prototype.apply_gravity_to_points = function(delta) {
 
 World.prototype.tick = function(delta) {
   this.update_velocities(delta);
-  this.bound_points(delta);
   this.apply_gravity_to_points(delta);
+  this.bound_points(delta);
   this.apply_drag_to_points(delta);
   this.update_positions(delta);
 };
@@ -157,7 +157,7 @@ function get_random_color() {
 };
 
 function render_world(world, context) {
-  context.fillStyle = "rgba(0, 0, 0, 0.3)";
+  context.fillStyle = "rgba(0, 0, 0, 0.1)";
   context.fillRect(0, 0, context.canvas.width, context.canvas.height);
   for (var i=0; i < world.points.length; i++) {
     var point = world.points[i];
@@ -169,21 +169,37 @@ function render_world(world, context) {
   }
 };
 
+var get_offset = function(el) {
+    var _x = 0;
+    var _y = 0;
+    while( el && !isNaN( el.offsetLeft ) && !isNaN( el.offsetTop ) ) {
+        _x += el.offsetLeft - el.scrollLeft;
+        _y += el.offsetTop - el.scrollTop;
+        el = el.offsetParent;
+    }
+    return { top: _y, left: _x };
+};
+
 var width = 1300;
 var height = 600;
 
 var canvas = document.getElementById("canvas-0");
 var context = canvas.getContext("2d");
 
+var canvas_offset = get_offset(canvas);
+var x_offset = canvas_offset.left;
+var y_offset = canvas_offset.top;
+
 canvas.width = window.width;
 canvas.height = window.height;
-
 
 var world = new World(width, height);
 
 var handleMouseUp = function(event) { 
   if (event.button == 0) {
-    world.add_point(new Point(new Vector(event.pageX, event.pageY), new Vector(event.pageX, event.pageY).subtract(new Vector(document.tmpX, document.tmpY)).scale(0.2), get_random_color(), 5, 50.0));
+    world.add_point(new Point(new Vector(document.tmpX, document.tmpY), 
+                              (new Vector(event.pageX - x_offset, event.pageY - y_offset)).subtract(new Vector(document.tmpX, document.tmpY)).scale(0.50), 
+                              get_random_color(), 5, 50.0));
     canvas.style.cursor = "crosshair";
   } else {
   }
@@ -191,8 +207,8 @@ var handleMouseUp = function(event) {
 
 var handleMouseDown = function(event) {
   if (event.button == 0) {
-    document.tmpX = event.pageX;
-    document.tmpY = event.pageY;
+    document.tmpX = event.pageX - x_offset;
+    document.tmpY = event.pageY - y_offset;
     canvas.style.cursor = "move";
   } else {
   }
@@ -201,6 +217,9 @@ var handleMouseDown = function(event) {
 canvas.addEventListener("mouseup", handleMouseUp, false);
 
 canvas.addEventListener("mousedown", handleMouseDown, false);
+
+context.fillStyle = "green";
+context.fillRect(0, 0, context.canvas.width, context.canvas.height);
 
 window.setInterval(function() {
   world.tick(1);
