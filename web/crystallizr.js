@@ -60,13 +60,12 @@ World.prototype.add_point = function(point) {
 World.prototype.update_velocities = function(delta) {
   for (var i=0; i < this.points.length; i++) {
     var point = this.points[i];
-    //console.log(point.position);
+    //var twiceBalDistSquared = Math.pow(point.balance_distance * 2.0, 2.0); // Can optimize a LOT here. Skip some square roots, skip cals if outside, etc.
     for (var j=0; j < this.points.length; j++) {
       if (i == j) continue; // Skip if we're on the same point
       var target = this.points[j];
       var point_to_target = point.position.subtract(target.position);
       var distance = point_to_target.magnitude();
-
       var from_balance = Math.abs(distance - point.balance_distance);
       if (distance > (point.balance_distance * 2)) {
 
@@ -104,7 +103,7 @@ World.prototype.bound_points_deprecated = function(delta) {
 World.prototype.bound_points = function(delta) {
   for (var i=0; i < this.points.length; i++) {
     var point = this.points[i];
-    var friction = -0.5;
+    var friction = 0; // This is dumb. Might just swap out with a =[0, 0] at some point
     if (point.position.x > this.x_size - point.radius) {
       point.velocity = point.velocity.scale(friction);
       point.position.x = this.x_size - point.radius;
@@ -231,7 +230,7 @@ var handleMouseUp = function(event) {
   } else {
     world.add_point(new Point(new Vector(drag_x, drag_y), 
                               (new Vector(event.pageX - x_offset, event.pageY - y_offset)).subtract(new Vector(drag_x, drag_y)).scale(0.30), 
-                              get_random_color(), 5, 50.0));
+                              get_random_color(), 5.0, 50.0));
     
   }
   shift_pressed = false;
