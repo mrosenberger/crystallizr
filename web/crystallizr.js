@@ -67,6 +67,8 @@ World.prototype.update_velocities = function(delta) {
       var point_to_target = point.position.subtract(target.position);
       var distance = point_to_target.magnitude();
       var from_balance = Math.abs(distance - point.balance_distance);
+      //var color_val = (distance / (sim_config.equilibrium_distance * sim_config.interaction_cutoff_in_equilibriums)) * 255;
+      context.strokeStyle = "gray";
       if (distance > (point.balance_distance * sim_config.interaction_cutoff_in_equilibriums)) {
 
       } else if (distance > point.balance_distance) { // Point is outside balance, attract
@@ -76,7 +78,10 @@ World.prototype.update_velocities = function(delta) {
           context.moveTo(point.position.x, point.position.y);
           context.lineTo(target.position.x, target.position.y);
           context.closePath();
-          context.strokeStyle = "green";
+          //context.strokeStyle = "green";
+          //console.log(from_balance);
+          //context.strokeStyle = "rgba(0," + 255 - color_val + "," + color_val + ",1.0)";
+          //context.strokeStyle = "rgba(200, 200, 200, 1.0)";
           context.stroke();
         }
       } else { // Point is inside balance, repel
@@ -86,7 +91,9 @@ World.prototype.update_velocities = function(delta) {
           context.moveTo(point.position.x, point.position.y);
           context.lineTo(target.position.x, target.position.y);
           context.closePath();
-          context.strokeStyle = "red";
+          //context.strokeStyle = "rgba(100,0," + from_balance + ",1)";
+          //context.strokeStyle = "red";
+          //context.strokeStyle = "rgba(0," + (255 - color_val) + "," + color_val + ",1.0)";
           context.stroke();
         }
       }
@@ -166,10 +173,17 @@ World.prototype.apply_gravity_to_points = function(delta) {
 
 World.prototype.tick = function(delta) {
   this.update_velocities(delta);
-  if (!(mouse_pressed && shift_pressed)) this.apply_gravity_to_points(delta);
-  this.bound_points(delta);
+  //if (!(mouse_pressed && shift_pressed)) this.apply_gravity_to_points(delta);
+  this.apply_gravity_to_points(delta);
   this.apply_drag_to_points(delta);
   this.update_positions(delta);
+  this.bound_points(delta);
+  if (mouse_pressed && !shift_pressed) {
+    for (var i=0; i < points_to_drag.length; i++) {
+      var point = points_to_drag[i];
+      point.accelerate((new Vector(drag_x, drag_y).subtract(point.position)).scale(0.01));
+    }
+  }
 };
 
 // Rendering
@@ -184,11 +198,12 @@ function get_random_color() {
 };
 
 function render_world(world, context) {
-  if (mouse_pressed && shift_pressed) {
-    context.fillStyle = "rgba(0, 0, 0, 0.5)";
-  } else {
-    context.fillStyle = "rgba(0, 0, 0, 0.5)";
-  }
+  //if (mouse_pressed && shift_pressed) {
+  //  context.fillStyle = "rgba(0, 0, 0, " + sim_config.screen_clear_opacity_dragging + ")";
+  //} else {
+  //  context.fillStyle = "rgba(0, 0, 0, " + sim_config.screen_clear_opacity + ")";
+  //}
+  context.fillStyle = "rgba(0, 0, 0, " + sim_config.screen_clear_opacity + ")";
   context.fillRect(0, 0, context.canvas.width, context.canvas.height);
   for (var i=0; i < world.points.length; i++) {
     var point = world.points[i];
@@ -197,6 +212,16 @@ function render_world(world, context) {
     context.arc(point.position.x, point.position.y, point.radius, 0, Math.PI*2, true); 
     context.closePath();
     context.fill();
+  }
+
+  if (shift_pressed && mouse_pressed) {
+    // Draw lines showing point to be thrown
+    context.beginPath();
+    context.moveTo(drag_origin_x, drag_origin_y);
+    context.lineTo(drag_x, drag_y);
+    context.closePath();
+    context.strokeStyle = "orange";
+    context.stroke();
   }
 };
 
@@ -223,24 +248,84 @@ var w = window,
 var width = x * 0.95;
 var height = y * 0.9;
 
+
 // Parameters of simulation
-var sim_config = {
+var firm_crystal_config_000 = {
   attraction_scalar: 0.0001,
   repulsion_scalar: -0.01, 
-  drag_multiplier: 0.94,
+  drag_multiplier: 0.95,
+  gravity_strength: 0.1,
+  interaction_cutoff_in_equilibriums: 2.0,
+  equilibrium_distance: 50.0,
+  point_radius: 5,
+  point_shooting_scalar: 0.3,
+  draw_force_lines: true,
+  wall_bounce_offending_coordinate_multiplier: -0.5,
+  wall_bounce_non_offending_coordinate_multiplier: 0.5,
+  initial_population: 100,
+  screen_clear_opacity: 0.5,
+  screen_clear_opacity_dragging: 0.5
+};
+
+var twitchy_echoers_config_000 = {
+  attraction_scalar: 0.001,
+  repulsion_scalar: -0.001, 
+  drag_multiplier: 0.95,
   gravity_strength: 0.1,
   interaction_cutoff_in_equilibriums: 2.0,
   equilibrium_distance: 50.0,
   point_radius: 2,
   point_shooting_scalar: 0.3,
   draw_force_lines: true,
-  wall_bounce_offending_coordinate_multiplier: 0,
-  wall_bounce_non_offending_coordinate_multiplier: 0
+  wall_bounce_offending_coordinate_multiplier: -0.5,
+  wall_bounce_non_offending_coordinate_multiplier: 0,
+  initial_population: 100,
+  screen_clear_opacity: 0.5,
+  screen_clear_opacity_dragging: 0.5
 };
+
+var polyhedra_config_000 = {
+  attraction_scalar: 0.0001,
+  repulsion_scalar: -0.0001, 
+  drag_multiplier: 0.98,
+  gravity_strength: 0.0,
+  interaction_cutoff_in_equilibriums: 2.0,
+  equilibrium_distance: 50.0,
+  point_radius: 5,
+  point_shooting_scalar: 0.3,
+  draw_force_lines: true,
+  wall_bounce_offending_coordinate_multiplier: -0.5,
+  wall_bounce_non_offending_coordinate_multiplier: 0,
+  initial_population: 100,
+  screen_clear_opacity: 0.5,
+  screen_clear_opacity_dragging: 0.5
+};
+
+var billiard_ball_config_000 = {
+  attraction_scalar: 0,
+  repulsion_scalar: -0.01, 
+  drag_multiplier: 0.98,
+  gravity_strength: 0.1,
+  interaction_cutoff_in_equilibriums: 1,
+  equilibrium_distance: 60,
+  point_radius: 30,
+  point_shooting_scalar: 0.3,
+  draw_force_lines: false,
+  wall_bounce_offending_coordinate_multiplier: -0.9,
+  wall_bounce_non_offending_coordinate_multiplier: 0.9,
+  initial_population: 00,
+  screen_clear_opacity: 0.5,
+  screen_clear_opacity_dragging: 0.1
+};
+
+var sim_config = firm_crystal_config_000;
 
 // Canvas and context
 var canvas = document.getElementById("canvas-0");
 var context = canvas.getContext("2d");
+
+// Give the canvas focus
+canvas.focus();
 
 // Offsets based on canvas position in page
 var canvas_offset = get_offset(canvas);
@@ -251,9 +336,14 @@ var y_offset = canvas_offset.top;
 var drag_x = 0;
 var drag_y = 0;
 
+var drag_origin_x = 0;
+var drag_origin_y = 0;
+
 // Toggles to hold state of shift and mouse
 var shift_pressed = false;
 var mouse_pressed = false;
+
+var points_to_drag = [];
 
 // Initialize canvas object size based on above defined heights
 canvas.width = width;
@@ -263,63 +353,93 @@ canvas.height = height;
 var world = new World(width, height);
 
 // Define event listeners
-var handleMouseUp = function(event) { 
-  mouse_pressed = false;
-  canvas.style.cursor = "crosshair";
-  if (!shift_pressed) {
-    world.add_point(new Point(new Vector(drag_x, drag_y), 
-                              (new Vector(event.pageX - x_offset, event.pageY - y_offset)).subtract(new Vector(drag_x, drag_y)).scale(sim_config.point_shooting_scalar), 
-                              get_random_color(), sim_config.point_radius, sim_config.equilibrium_distance));
+var handle_mouse_up = function(event) { 
+  if (mouse_pressed) {
+    canvas.style.cursor = "crosshair";
+    mouse_pressed = false;
+    if (shift_pressed) {
+      canvas.style.cursor = "crosshair";
+      world.add_point(new Point(new Vector(drag_x, drag_y), 
+                                (new Vector(event.pageX - x_offset, event.pageY - y_offset)).subtract(new Vector(drag_origin_x, drag_origin_y)).scale(sim_config.point_shooting_scalar), 
+                                get_random_color(), sim_config.point_radius, sim_config.equilibrium_distance));
+    }
+    //shift_pressed = false; // Reset shift key no matter what if mouse came up
   }
-  shift_pressed = false; // This prevents a bad race condition we were experiencing
 };
-var handleMouseDown = function(event) {
+var handle_mouse_down = function(event) {
   mouse_pressed = true;
   drag_x = event.pageX - x_offset;
   drag_y = event.pageY - y_offset;
-  canvas.style.cursor = "move";
-};
-var handleKeyDown = function(event) {
-  if (event.shiftKey) {
-    shift_pressed = true;
-  }
-};
-var handleKeyUp = function(event) {
-  if (event.keyCode == 16) {
-    //shift_pressed = false; // We don't use this because of a race condition.
-  }
-};
-var handleMouseMove = function(event) {
-  var real_x = event.clientX - x_offset;
-  var real_y = event.clientY - y_offset;
-  if (shift_pressed && mouse_pressed) {
+  drag_origin_x = drag_x;
+  drag_origin_y = drag_y;
+  points_to_drag = [];
+  if (shift_pressed) {
+    canvas.style.cursor = "pointer"; 
+  } else {
+    canvas.style.cursor = "move";
     for (var i=0; i < world.points.length; i++) {
       var point = world.points[i];
-      point.accelerate((new Vector(real_x, real_y).subtract(new Vector(drag_x, drag_y))).scale(0.1));
+      if (point.position.subtract(new Vector(drag_x, drag_y)).magnitude() < 100) points_to_drag.push(point);
     }
-    drag_x = real_x;
-    drag_y = real_y;
-  } else if (mouse_pressed) {
-    // Draw lines showing point to be thrown
-    context.beginPath();
-    context.moveTo(drag_x, drag_y);
-    context.lineTo(real_x, real_y);
-    context.closePath();
-    context.strokeStyle = "orange";
-    context.stroke();
   }
-}
+};
+var handle_key_down = function(event) {
+  if (event.keyCode == 16) {
+    shift_pressed = true;
+    canvas.style.cursor = "pointer";
+  }
+};
+var handle_key_up = function(event) {
+  if (event.keyCode == 16) {
+    canvas.style.cursor = "crosshair";
+    shift_pressed = false;
+    //shift_pressed = false; // Instead of using this, we reset the state of the shift key when the mouse is unpressed
+  }
+};
+var handle_mouse_move = function(event) {
+  var real_x = event.clientX - x_offset;
+  var real_y = event.clientY - y_offset;
+  drag_x = real_x;
+  drag_y = real_y;
+  if (mouse_pressed && shift_pressed) {
+    
+  } else if (mouse_pressed) {
+    
+  }
+};
+var handle_mouse_out = function(event) {
+  shift_pressed = false;
+  mouse_pressed = false;
+  canvas.style.cursor = "crosshair";
+};
+var handle_mouse_over = function(event) {
+  shift_pressed = false;
+  mouse_pressed = false;
+  canvas.style.cursor = "crosshair";
+};
+
+var quick_populate = function(n) {
+  for (var i=0; i < n; i++) {
+    world.add_point(new Point(new Vector(Math.random() * width, Math.random() * height), 
+                                new Vector(0, 0), 
+                                get_random_color(), sim_config.point_radius, sim_config.equilibrium_distance));
+  }
+};
 
 // Assign event listeners
-canvas.addEventListener("mouseup", handleMouseUp, false);
-canvas.addEventListener("mousedown", handleMouseDown, false);
-canvas.addEventListener("keyup", handleKeyUp, false);
-canvas.addEventListener("keydown", handleKeyDown, false);
-canvas.addEventListener("mousemove", handleMouseMove, false);
+canvas.addEventListener("mouseup", handle_mouse_up, false);
+canvas.addEventListener("mousedown", handle_mouse_down, false);
+canvas.addEventListener("keyup", handle_key_up, false);
+canvas.addEventListener("keydown", handle_key_down, false);
+canvas.addEventListener("mousemove", handle_mouse_move, false);
+canvas.addEventListener("mouseout", handle_mouse_out, false);
+canvas.addEventListener("mouseover", handle_mouse_over, false);
 
 // Initially fill the screen with a color to prevent trails problem we were experiencing
 context.fillStyle = "green";
 context.fillRect(0, 0, context.canvas.width, context.canvas.height);
+
+quick_populate(sim_config.initial_population);
 
 // Start the main game loop
 window.setInterval(function() {
