@@ -167,9 +167,10 @@ World.prototype.apply_gravity_to_points = function(delta) {
 World.prototype.tick = function(delta) {
   this.update_velocities(delta);
   if (!(mouse_pressed && shift_pressed)) this.apply_gravity_to_points(delta);
-  this.bound_points(delta);
   this.apply_drag_to_points(delta);
   this.update_positions(delta);
+  this.bound_points(delta);
+  
 };
 
 // Rendering
@@ -185,9 +186,9 @@ function get_random_color() {
 
 function render_world(world, context) {
   if (mouse_pressed && shift_pressed) {
-    context.fillStyle = "rgba(0, 0, 0, 0.5)";
+    context.fillStyle = "rgba(0, 0, 0, " + sim_config.screen_clear_opacity_dragging + ")";
   } else {
-    context.fillStyle = "rgba(0, 0, 0, 0.5)";
+    context.fillStyle = "rgba(0, 0, 0, " + sim_config.screen_clear_opacity + ")";
   }
   context.fillRect(0, 0, context.canvas.width, context.canvas.height);
   for (var i=0; i < world.points.length; i++) {
@@ -223,24 +224,84 @@ var w = window,
 var width = x * 0.95;
 var height = y * 0.9;
 
+
 // Parameters of simulation
-var sim_config = {
-  attraction_scalar: 0.0001,
+var firm_crystal_config_000 = {
+  attraction_scalar: 0.000,
   repulsion_scalar: -0.01, 
-  drag_multiplier: 0.94,
+  drag_multiplier: 0.95,
+  gravity_strength: 0.1,
+  interaction_cutoff_in_equilibriums: 2.0,
+  equilibrium_distance: 50.0,
+  point_radius: 5,
+  point_shooting_scalar: 0.3,
+  draw_force_lines: true,
+  wall_bounce_offending_coordinate_multiplier: -0.5,
+  wall_bounce_non_offending_coordinate_multiplier: 0.5,
+  initial_population: 100,
+  screen_clear_opacity: 0.5,
+  screen_clear_opacity_dragging: 0.5
+};
+
+var twitchy_echoers_config_000 = {
+  attraction_scalar: 0.001,
+  repulsion_scalar: -0.001, 
+  drag_multiplier: 0.95,
   gravity_strength: 0.1,
   interaction_cutoff_in_equilibriums: 2.0,
   equilibrium_distance: 50.0,
   point_radius: 2,
   point_shooting_scalar: 0.3,
   draw_force_lines: true,
-  wall_bounce_offending_coordinate_multiplier: 0,
-  wall_bounce_non_offending_coordinate_multiplier: 0
+  wall_bounce_offending_coordinate_multiplier: -0.5,
+  wall_bounce_non_offending_coordinate_multiplier: 0,
+  initial_population: 100,
+  screen_clear_opacity: 0.5,
+  screen_clear_opacity_dragging: 0.5
 };
+
+var polyhedra_config_000 = {
+  attraction_scalar: 0.0001,
+  repulsion_scalar: -0.0001, 
+  drag_multiplier: 0.98,
+  gravity_strength: 0.0,
+  interaction_cutoff_in_equilibriums: 2.0,
+  equilibrium_distance: 50.0,
+  point_radius: 5,
+  point_shooting_scalar: 0.3,
+  draw_force_lines: true,
+  wall_bounce_offending_coordinate_multiplier: -0.5,
+  wall_bounce_non_offending_coordinate_multiplier: 0,
+  initial_population: 100,
+  screen_clear_opacity: 0.5,
+  screen_clear_opacity_dragging: 0.5
+};
+
+var experimental_config_000 = {
+  attraction_scalar: 0,
+  repulsion_scalar: -0.005, 
+  drag_multiplier: 0.98,
+  gravity_strength: 0.1,
+  interaction_cutoff_in_equilibriums: 1,
+  equilibrium_distance: 60,
+  point_radius: 30,
+  point_shooting_scalar: 0.3,
+  draw_force_lines: false,
+  wall_bounce_offending_coordinate_multiplier: -0.9,
+  wall_bounce_non_offending_coordinate_multiplier: 0.9,
+  initial_population: 10,
+  screen_clear_opacity: 0.5,
+  screen_clear_opacity_dragging: 0.1
+};
+
+var sim_config = experimental_config_000;
 
 // Canvas and context
 var canvas = document.getElementById("canvas-0");
 var context = canvas.getContext("2d");
+
+// Give the canvas focus
+canvas.focus();
 
 // Offsets based on canvas position in page
 var canvas_offset = get_offset(canvas);
@@ -264,14 +325,16 @@ var world = new World(width, height);
 
 // Define event listeners
 var handleMouseUp = function(event) { 
-  mouse_pressed = false;
-  canvas.style.cursor = "crosshair";
-  if (!shift_pressed) {
-    world.add_point(new Point(new Vector(drag_x, drag_y), 
-                              (new Vector(event.pageX - x_offset, event.pageY - y_offset)).subtract(new Vector(drag_x, drag_y)).scale(sim_config.point_shooting_scalar), 
-                              get_random_color(), sim_config.point_radius, sim_config.equilibrium_distance));
+  if (mouse_pressed) {
+    mouse_pressed = false;
+    canvas.style.cursor = "crosshair";
+    if (!shift_pressed) {
+      world.add_point(new Point(new Vector(drag_x, drag_y), 
+                                (new Vector(event.pageX - x_offset, event.pageY - y_offset)).subtract(new Vector(drag_x, drag_y)).scale(sim_config.point_shooting_scalar), 
+                                get_random_color(), sim_config.point_radius, sim_config.equilibrium_distance));
+    }
+    shift_pressed = false; // Reset shift key no matter what if mouse came up
   }
-  shift_pressed = false; // This prevents a bad race condition we were experiencing
 };
 var handleMouseDown = function(event) {
   mouse_pressed = true;
@@ -280,13 +343,13 @@ var handleMouseDown = function(event) {
   canvas.style.cursor = "move";
 };
 var handleKeyDown = function(event) {
-  if (event.shiftKey) {
+  if (event.keyCode == 16) {
     shift_pressed = true;
   }
 };
 var handleKeyUp = function(event) {
   if (event.keyCode == 16) {
-    //shift_pressed = false; // We don't use this because of a race condition.
+    //shift_pressed = false; // Instead of using this, we reset the state of the shift key when the mouse is unpressed
   }
 };
 var handleMouseMove = function(event) {
@@ -308,7 +371,26 @@ var handleMouseMove = function(event) {
     context.strokeStyle = "orange";
     context.stroke();
   }
-}
+};
+var handleMouseOut = function(event) {
+  shift_pressed = false;
+  mouse_pressed = false;
+  canvas.style.cursor = "crosshair";
+  console.log("set cursor to crosshair");
+};
+var handleMouseOver = function(event) {
+  shift_pressed = false;
+  mouse_pressed = false;
+  canvas.style.cursor = "crosshair";
+};
+
+var quickPopulate = function(n) {
+  for (var i=0; i < n; i++) {
+    world.add_point(new Point(new Vector(Math.random() * width, Math.random() * height), 
+                                new Vector(0, 0), 
+                                get_random_color(), sim_config.point_radius, sim_config.equilibrium_distance));
+  }
+};
 
 // Assign event listeners
 canvas.addEventListener("mouseup", handleMouseUp, false);
@@ -316,11 +398,14 @@ canvas.addEventListener("mousedown", handleMouseDown, false);
 canvas.addEventListener("keyup", handleKeyUp, false);
 canvas.addEventListener("keydown", handleKeyDown, false);
 canvas.addEventListener("mousemove", handleMouseMove, false);
+canvas.addEventListener("mouseout", handleMouseOut, false);
+canvas.addEventListener("mouseover", handleMouseOver, false);
 
 // Initially fill the screen with a color to prevent trails problem we were experiencing
 context.fillStyle = "green";
 context.fillRect(0, 0, context.canvas.width, context.canvas.height);
 
+quickPopulate(sim_config.initial_population);
 // Start the main game loop
 window.setInterval(function() {
   world.tick(1.0);
