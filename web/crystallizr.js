@@ -67,7 +67,8 @@ World.prototype.update_velocities = function(delta) {
       var point_to_target = point.position.subtract(target.position);
       var distance = point_to_target.magnitude();
       var from_balance = Math.abs(distance - point.balance_distance);
-      var color_val = Math.floor(from_balance * 2);
+      //var color_val = (distance / (sim_config.equilibrium_distance * sim_config.interaction_cutoff_in_equilibriums)) * 255;
+      context.strokeStyle = "gray";
       if (distance > (point.balance_distance * sim_config.interaction_cutoff_in_equilibriums)) {
 
       } else if (distance > point.balance_distance) { // Point is outside balance, attract
@@ -77,7 +78,7 @@ World.prototype.update_velocities = function(delta) {
           context.moveTo(point.position.x, point.position.y);
           context.lineTo(target.position.x, target.position.y);
           context.closePath();
-          context.strokeStyle = "green";
+          //context.strokeStyle = "green";
           //console.log(from_balance);
           //context.strokeStyle = "rgba(0," + 255 - color_val + "," + color_val + ",1.0)";
           //context.strokeStyle = "rgba(200, 200, 200, 1.0)";
@@ -91,7 +92,7 @@ World.prototype.update_velocities = function(delta) {
           context.lineTo(target.position.x, target.position.y);
           context.closePath();
           //context.strokeStyle = "rgba(100,0," + from_balance + ",1)";
-          context.strokeStyle = "red";
+          //context.strokeStyle = "red";
           //context.strokeStyle = "rgba(0," + (255 - color_val) + "," + color_val + ",1.0)";
           context.stroke();
         }
@@ -212,6 +213,16 @@ function render_world(world, context) {
     context.closePath();
     context.fill();
   }
+
+  if (shift_pressed && mouse_pressed) {
+    // Draw lines showing point to be thrown
+    context.beginPath();
+    context.moveTo(drag_origin_x, drag_origin_y);
+    context.lineTo(drag_x, drag_y);
+    context.closePath();
+    context.strokeStyle = "orange";
+    context.stroke();
+  }
 };
 
 var get_offset = function(el) {
@@ -325,6 +336,9 @@ var y_offset = canvas_offset.top;
 var drag_x = 0;
 var drag_y = 0;
 
+var drag_origin_x = 0;
+var drag_origin_y = 0;
+
 // Toggles to hold state of shift and mouse
 var shift_pressed = false;
 var mouse_pressed = false;
@@ -346,7 +360,7 @@ var handle_mouse_up = function(event) {
     if (shift_pressed) {
       canvas.style.cursor = "crosshair";
       world.add_point(new Point(new Vector(drag_x, drag_y), 
-                                (new Vector(event.pageX - x_offset, event.pageY - y_offset)).subtract(new Vector(drag_x, drag_y)).scale(sim_config.point_shooting_scalar), 
+                                (new Vector(event.pageX - x_offset, event.pageY - y_offset)).subtract(new Vector(drag_origin_x, drag_origin_y)).scale(sim_config.point_shooting_scalar), 
                                 get_random_color(), sim_config.point_radius, sim_config.equilibrium_distance));
     }
     //shift_pressed = false; // Reset shift key no matter what if mouse came up
@@ -356,6 +370,8 @@ var handle_mouse_down = function(event) {
   mouse_pressed = true;
   drag_x = event.pageX - x_offset;
   drag_y = event.pageY - y_offset;
+  drag_origin_x = drag_x;
+  drag_origin_y = drag_y;
   points_to_drag = [];
   if (shift_pressed) {
     canvas.style.cursor = "pointer"; 
@@ -383,17 +399,12 @@ var handle_key_up = function(event) {
 var handle_mouse_move = function(event) {
   var real_x = event.clientX - x_offset;
   var real_y = event.clientY - y_offset;
+  drag_x = real_x;
+  drag_y = real_y;
   if (mouse_pressed && shift_pressed) {
-    // Draw lines showing point to be thrown
-    context.beginPath();
-    context.moveTo(drag_x, drag_y);
-    context.lineTo(real_x, real_y);
-    context.closePath();
-    context.strokeStyle = "orange";
-    context.stroke();
+    
   } else if (mouse_pressed) {
-    drag_x = real_x;
-    drag_y = real_y;
+    
   }
 };
 var handle_mouse_out = function(event) {
