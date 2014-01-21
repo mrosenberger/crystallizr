@@ -264,11 +264,66 @@ var firm_crystal_config_000 = {
   wall_bounce_non_offending_coordinate_multiplier: 0.5,
   initial_population: 100,
   screen_clear_opacity: 0.5,
-  screen_clear_opacity_dragging: 0.5
+  screen_clear_opacity_dragging: 0.5,
+  drag_selection_radius: 150
 };
 
-var twitchy_echoers_config_000 = {
-  attraction_scalar: 0.001,
+var firm_crystal_config_001 = {
+  attraction_scalar: 0.0003,
+  repulsion_scalar: -0.02, 
+  drag_multiplier: 0.95,
+  gravity_strength: 0.1,
+  interaction_cutoff_in_equilibriums: 2.0,
+  equilibrium_distance: 40.0,
+  point_radius: 5,
+  point_shooting_scalar: 0.3,
+  draw_force_lines: false,
+  wall_bounce_offending_coordinate_multiplier: -0.5,
+  wall_bounce_non_offending_coordinate_multiplier: 0.5,
+  initial_population: 100,
+  screen_clear_opacity: 0.5,
+  screen_clear_opacity_dragging: 0.5,
+  drag_selection_radius: 100
+};
+
+var firm_crystal_config_002 = {
+  attraction_scalar: 0.0004,
+  repulsion_scalar: -0.021, 
+  drag_multiplier: 0.95,
+  gravity_strength: 0.1,
+  interaction_cutoff_in_equilibriums: 2.0,
+  equilibrium_distance: 40.0,
+  point_radius: 5,
+  point_shooting_scalar: 0.3,
+  draw_force_lines: false,
+  wall_bounce_offending_coordinate_multiplier: -0.5,
+  wall_bounce_non_offending_coordinate_multiplier: 0.5,
+  initial_population: 100,
+  screen_clear_opacity: 0.5,
+  screen_clear_opacity_dragging: 0.5,
+  drag_selection_radius: 100
+};
+
+var firm_crystal_config_003 = {
+  attraction_scalar: 0.0004,
+  repulsion_scalar: -0.021, 
+  drag_multiplier: 0.95,
+  gravity_strength: 0.1,
+  interaction_cutoff_in_equilibriums: 2.0,
+  equilibrium_distance: 40.0,
+  point_radius: 5,
+  point_shooting_scalar: 0.3,
+  draw_force_lines: false,
+  wall_bounce_offending_coordinate_multiplier: -0.5,
+  wall_bounce_non_offending_coordinate_multiplier: 0.5,
+  initial_population: 150,
+  screen_clear_opacity: 0.5,
+  screen_clear_opacity_dragging: 0.5,
+  drag_selection_radius: 80
+};
+
+var sinister_spheres_config_000 = {
+  attraction_scalar: 0.0015,
   repulsion_scalar: -0.001, 
   drag_multiplier: 0.95,
   gravity_strength: 0.1,
@@ -276,12 +331,13 @@ var twitchy_echoers_config_000 = {
   equilibrium_distance: 50.0,
   point_radius: 2,
   point_shooting_scalar: 0.3,
-  draw_force_lines: true,
+  draw_force_lines: false,
   wall_bounce_offending_coordinate_multiplier: -0.5,
-  wall_bounce_non_offending_coordinate_multiplier: 0,
+  wall_bounce_non_offending_coordinate_multiplier: 1,
   initial_population: 100,
   screen_clear_opacity: 0.5,
-  screen_clear_opacity_dragging: 0.5
+  screen_clear_opacity_dragging: 0.5,
+  drag_selection_radius: 100
 };
 
 var polyhedra_config_000 = {
@@ -295,10 +351,11 @@ var polyhedra_config_000 = {
   point_shooting_scalar: 0.3,
   draw_force_lines: true,
   wall_bounce_offending_coordinate_multiplier: -0.5,
-  wall_bounce_non_offending_coordinate_multiplier: 0,
+  wall_bounce_non_offending_coordinate_multiplier: 0.9,
   initial_population: 100,
   screen_clear_opacity: 0.5,
-  screen_clear_opacity_dragging: 0.5
+  screen_clear_opacity_dragging: 0.5,
+  drag_selection_radius: 100
 };
 
 var billiard_ball_config_000 = {
@@ -313,12 +370,13 @@ var billiard_ball_config_000 = {
   draw_force_lines: false,
   wall_bounce_offending_coordinate_multiplier: -0.9,
   wall_bounce_non_offending_coordinate_multiplier: 0.9,
-  initial_population: 00,
+  initial_population: 100,
   screen_clear_opacity: 0.5,
-  screen_clear_opacity_dragging: 0.1
+  screen_clear_opacity_dragging: 0.1,
+  drag_selection_radius: 100
 };
 
-var sim_config = firm_crystal_config_000;
+var sim_config = firm_crystal_config_003;
 
 // Canvas and context
 var canvas = document.getElementById("canvas-0");
@@ -377,7 +435,7 @@ var handle_mouse_down = function(event) {
     canvas.style.cursor = "move";
     for (var i=0; i < world.points.length; i++) {
       var point = world.points[i];
-      if (point.position.subtract(new Vector(current_mouse_x, current_mouse_y)).magnitude() < 100) points_to_drag.push(point);
+      if (point.position.subtract(new Vector(current_mouse_x, current_mouse_y)).magnitude() < sim_config.drag_selection_radius) points_to_drag.push(point);
     }
   }
 };
