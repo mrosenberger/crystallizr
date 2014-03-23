@@ -1,7 +1,7 @@
 #simulation-controls {
   width: 95%;
   background: white;
-  box-shadow: 0px 0px 20px black;
+  box-shadow: 0px 0px 20px gray;
   margin: 5 auto;
   text-align: center;
 }
@@ -51,7 +51,7 @@
 
 #simulation-canvas {
   display: block;
-  cursor: default;
+  cursor: crosshair;
   -webkit-touch-callout: none;
   -webkit-user-select: none;
   -khtml-user-select: none;
@@ -61,4 +61,5 @@
   margin: 0 auto;
   width: 95%;
   outline: 0;
+  box-shadow: 0px 0px 20px gray;
 }

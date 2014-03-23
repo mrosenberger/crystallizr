@@ -459,35 +459,58 @@ var populate_controls = function(controls_element, sim_config) {
   };
 
   _.each(sim_config, function(v, k) {
-    controls_element.append(
-      $(
-        "<div class='control-wrapper'>" + 
-          "<form>" +
-            "<span class='control-name'>" + 
-              prepare_control_name(k) +
-            "</span> " + 
-            "<input type='text' class='control-input-text' value='" + v + "'>" + 
-          "</form>" + 
-        "</div>"
-      ).submit(
-        (function(property_name) {
-          return function(e) {
-            var value = $(this).find("input").first().val();
-            e.preventDefault();
-            if (!value) return;
-            var type_of = typeof sim_config[property_name];
-            animateSubmit(this);
-            if (type_of == "string") {
-              sim_config[property_name] = value;
-            } else if (type_of == "boolean") {
-              sim_config[property_name] = (value.toLowerCase() == "true" || value == "1" || value.toLowerCase() == "yes");
-            } else if (type_of == "number") {
-              sim_config[property_name] = parseFloat(value); 
-            }
-          };
-        })(k)
-      )
+
+    var controlElement = $(
+      "<div class='control-wrapper'>" + 
+        "<form>" +
+          "<span class='control-name'>" + 
+            prepare_control_name(k) +
+          "</span> " + 
+          "<input type='text' class='control-input-text' value='" + v + "'>" + 
+        "</form>" + 
+      "</div>"
     );
+
+    controlElement.bind("submit", 
+      (function(property_name) {
+        return function(e) {
+          var value = $(this).find("input").first().val();
+          e.preventDefault();
+          if (!value) return;
+          var type_of = typeof sim_config[property_name];
+          animateSubmit(this);
+          if (type_of == "string") {
+            sim_config[property_name] = value;
+          } else if (type_of == "boolean") {
+            sim_config[property_name] = (value.toLowerCase() == "true" || value == "1" || value.toLowerCase() == "yes");
+          } else if (type_of == "number") {
+            sim_config[property_name] = parseFloat(value); 
+          }
+        };
+      })(k)
+    );
+
+    controlElement.find("input").bind("blur", 
+      (function(property_name) {
+        return function(e) {
+          var value = $(this).val();
+          e.preventDefault();
+          if (!value) return;
+          var type_of = typeof sim_config[property_name];
+          animateSubmit(this);
+          if (type_of == "string") {
+            sim_config[property_name] = value;
+          } else if (type_of == "boolean") {
+            sim_config[property_name] = (value.toLowerCase() == "true" || value == "1" || value.toLowerCase() == "yes");
+          } else if (type_of == "number") {
+            sim_config[property_name] = parseFloat(value); 
+          }
+        };
+      })(k)
+    );
+
+    controls_element.append(controlElement);
+
   });
 
   controls_element.append(
@@ -547,7 +570,7 @@ var w = window,
 // Height of the canvas and world
 var width = x * 0.95; // Make sure to keep this synced up with the css
 //var height = y * 0.65;
-var height = y - $("#simulation-controls").height() - 20;
+var height = y - $("#simulation-controls").height() - 15;
 
 // Canvas and context
 var canvas = document.getElementById("simulation-canvas");
