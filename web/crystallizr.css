@@ -1,0 +1,43 @@
+#simulation-controls {
+  width: 95%;
+  background: white;
+  box-shadow: 0px 0px 10px black;
+  margin: 5 auto;
+}
+
+
+.control-wrapper {
+  display: inline-block;
+  width: 180px;
+  height: 50px;
+  border: 1px solid black;
+  padding: 2px;
+  margin: 5px;
+  text-align: center;
+}
+
+.control-name {
+  font-size: 0.7em;
+  display: block;
+  margin: 0 auto;
+}
+
+.control-input {
+  display: block;
+  margin: 0 auto;
+  width: 80px;
+  padding: 3px;
+}
+
+#simulation-canvas {
+  display: block;
+  cursor:default;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -khtml-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  margin: 0 auto;
+  width: 95%;
+}

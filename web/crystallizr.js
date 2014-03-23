@@ -105,23 +105,23 @@ World.prototype.bound_points = function(delta) {
   for (var i=0; i < this.points.length; i++) {
     var point = this.points[i];
     if (point.position.x > this.x_size - point.radius) {
-      point.velocity.x *= sim_config.wall_bounce_offending_coordinate_multiplier;
-      point.velocity.y *= sim_config.wall_bounce_non_offending_coordinate_multiplier;
+      point.velocity.x *= sim_config.bounce_offending_multiplier;
+      point.velocity.y *= sim_config.bounce_non_offending_multiplier;
       point.position.x = this.x_size - point.radius;
     }
     if (point.position.x < point.radius) {
-      point.velocity.x *= sim_config.wall_bounce_offending_coordinate_multiplier;
-      point.velocity.y *= sim_config.wall_bounce_non_offending_coordinate_multiplier;
+      point.velocity.x *= sim_config.bounce_offending_multiplier;
+      point.velocity.y *= sim_config.bounce_non_offending_multiplier;
       point.position.x = point.radius;
     }
     if (point.position.y > this.y_size - point.radius) {
-      point.velocity.y *= sim_config.wall_bounce_offending_coordinate_multiplier;
-      point.velocity.x *= sim_config.wall_bounce_non_offending_coordinate_multiplier;
+      point.velocity.y *= sim_config.bounce_offending_multiplier;
+      point.velocity.x *= sim_config.bounce_non_offending_multiplier;
       point.position.y = this.y_size - point.radius;
     }
     if (point.position.y < point.radius) {
-      point.velocity.y *= sim_config.wall_bounce_offending_coordinate_multiplier;
-      point.velocity.x *= sim_config.wall_bounce_non_offending_coordinate_multiplier;
+      point.velocity.y *= sim_config.bounce_offending_multiplier;
+      point.velocity.x *= sim_config.bounce_non_offending_multiplier;
       point.position.y = point.radius;
     }
   }
@@ -245,8 +245,8 @@ var w = window,
     y = w.innerHeight|| e.clientHeight|| g.clientHeight;
 
 // Height of the canvas and world
-var width = x * 0.95;
-var height = y * 0.9;
+var width = x * 0.95; // Make sure to keep this synced up with the css
+var height = y * 0.7;
 
 
 // Parameters of simulation
@@ -260,8 +260,8 @@ var firm_crystal_config_000 = {
   point_radius: 5,
   point_shooting_scalar: 0.3,
   draw_force_lines: false,
-  wall_bounce_offending_coordinate_multiplier: -0.5,
-  wall_bounce_non_offending_coordinate_multiplier: 0.5,
+  bounce_offending_multiplier: -0.5,
+  bounce_non_offending_multiplier: 1.0,
   initial_population: 100,
   screen_clear_opacity: 0.5,
   screen_clear_opacity_dragging: 0.5,
@@ -278,8 +278,8 @@ var firm_crystal_config_001 = {
   point_radius: 5,
   point_shooting_scalar: 0.3,
   draw_force_lines: false,
-  wall_bounce_offending_coordinate_multiplier: -0.5,
-  wall_bounce_non_offending_coordinate_multiplier: 0.5,
+  bounce_offending_multiplier: -0.5,
+  bounce_non_offending_multiplier: 0.5,
   initial_population: 100,
   screen_clear_opacity: 0.5,
   screen_clear_opacity_dragging: 0.5,
@@ -296,8 +296,8 @@ var firm_crystal_config_002 = {
   point_radius: 5,
   point_shooting_scalar: 0.3,
   draw_force_lines: false,
-  wall_bounce_offending_coordinate_multiplier: -0.5,
-  wall_bounce_non_offending_coordinate_multiplier: 0.5,
+  bounce_offending_multiplier: -0.5,
+  bounce_non_offending_multiplier: 0.5,
   initial_population: 100,
   screen_clear_opacity: 0.5,
   screen_clear_opacity_dragging: 0.5,
@@ -314,8 +314,8 @@ var firm_crystal_config_003 = {
   point_radius: 5,
   point_shooting_scalar: 0.3,
   draw_force_lines: false,
-  wall_bounce_offending_coordinate_multiplier: -0.5,
-  wall_bounce_non_offending_coordinate_multiplier: 0.5,
+  bounce_offending_multiplier: -0.5,
+  bounce_non_offending_multiplier: 1.0,
   initial_population: 150,
   screen_clear_opacity: 0.5,
   screen_clear_opacity_dragging: 0.5,
@@ -332,8 +332,8 @@ var sinister_spheres_config_000 = {
   point_radius: 2,
   point_shooting_scalar: 0.3,
   draw_force_lines: false,
-  wall_bounce_offending_coordinate_multiplier: -0.5,
-  wall_bounce_non_offending_coordinate_multiplier: 1,
+  bounce_offending_multiplier: -0.5,
+  bounce_non_offending_multiplier: 1,
   initial_population: 100,
   screen_clear_opacity: 0.5,
   screen_clear_opacity_dragging: 0.5,
@@ -350,8 +350,8 @@ var polyhedra_config_000 = {
   point_radius: 5,
   point_shooting_scalar: 0.3,
   draw_force_lines: true,
-  wall_bounce_offending_coordinate_multiplier: -0.5,
-  wall_bounce_non_offending_coordinate_multiplier: 0.9,
+  bounce_offending_multiplier: -0.5,
+  bounce_non_offending_multiplier: 0.9,
   initial_population: 100,
   screen_clear_opacity: 0.5,
   screen_clear_opacity_dragging: 0.5,
@@ -368,8 +368,8 @@ var billiard_ball_config_000 = {
   point_radius: 30,
   point_shooting_scalar: 0.3,
   draw_force_lines: false,
-  wall_bounce_offending_coordinate_multiplier: -0.9,
-  wall_bounce_non_offending_coordinate_multiplier: 0.9,
+  bounce_offending_multiplier: -0.9,
+  bounce_non_offending_multiplier: 0.9,
   initial_population: 100,
   screen_clear_opacity: 0.5,
   screen_clear_opacity_dragging: 0.1,
@@ -379,7 +379,7 @@ var billiard_ball_config_000 = {
 var sim_config = firm_crystal_config_003;
 
 // Canvas and context
-var canvas = document.getElementById("canvas-0");
+var canvas = document.getElementById("simulation-canvas");
 var context = canvas.getContext("2d");
 
 // Give the canvas focus
@@ -474,6 +474,34 @@ var quick_populate = function(n) {
   }
 };
 
+var populate_controls = function(controls_element, sim_config) {
+
+  function prepare_control_name(s) {
+    return _.string.capitalize(s.replace(/_/g, " "));
+  };
+
+  _.each(sim_config, function(v, k) {
+    controls_element.append(
+      $(
+        "<form class='control-wrapper'>" + 
+          "<span class='control-name'>" + 
+            prepare_control_name(k) +
+          "</span> " + 
+          "<input class='control-input' value='" + v + "'>" + 
+        "</form>"
+      ).submit(
+        (function(property_name) {
+          return function(e) { 
+            console.log($(this).find("input").first().val());
+            sim_config[property_name] = parseFloat($(this).find("input").first().val()); 
+            e.preventDefault();
+          };
+        })(k)
+      )
+    );
+  });
+};
+
 // Assign event listeners
 canvas.addEventListener("mouseup", handle_mouse_up, false);
 canvas.addEventListener("mousedown", handle_mouse_down, false);
@@ -489,9 +517,13 @@ context.fillRect(0, 0, context.canvas.width, context.canvas.height);
 
 quick_populate(sim_config.initial_population);
 
+var i = 0;
+
 // Start the main game loop
 window.setInterval(function() {
+  //console.log(i++);
   render_world(world, context);
   world.tick(1.0);
-  
 }, 0);
+
+populate_controls($("#simulation-controls"), sim_config);
