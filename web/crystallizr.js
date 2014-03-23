@@ -179,6 +179,17 @@ World.prototype.tick = function(delta) {
   this.update_positions(delta);
   this.bound_points(delta);
   if (mouse_pressed && !shift_pressed) {
+
+    ticks_since_drag_start++;
+    var before = context.globalAlpha;
+    context.globalAlpha = Math.max(0.0, 1.0 - (0.1 * ticks_since_drag_start));
+    context.beginPath();
+    context.arc(current_mouse_x, current_mouse_y, sim_config.drag_selection_radius, 0, 2 * Math.PI, false);
+    context.lineWidth = 1;
+    context.strokeStyle = '#FFF';
+    context.stroke();
+    context.globalAlpha = before;
+
     for (var i=0; i < points_to_drag.length; i++) {
       var point = points_to_drag[i];
       point.accelerate((new Vector(current_mouse_x, current_mouse_y).subtract(point.position)).scale(0.01));
@@ -196,6 +207,14 @@ function get_random_color() {
   }
   return color;
 };
+
+function choose_point_color() {
+  if (_.string.strip(sim_config.new_point_color) == "random") {
+    return get_random_color();
+  } else {
+    return sim_config.new_point_color;
+  }
+}
 
 function render_world(world, context) {
   //if (mouse_pressed && shift_pressed) {
@@ -257,7 +276,7 @@ var firm_crystal_config_000 = {
   gravity_strength: 0.1,
   interaction_cutoff_in_equilibriums: 2.0,
   equilibrium_distance: 50.0,
-  point_radius: 5,
+  new_point_radius: 5,
   point_shooting_scalar: 0.3,
   draw_force_lines: false,
   bounce_offending_multiplier: -0.5,
@@ -275,7 +294,7 @@ var firm_crystal_config_001 = {
   gravity_strength: 0.1,
   interaction_cutoff_in_equilibriums: 2.0,
   equilibrium_distance: 40.0,
-  point_radius: 5,
+  new_point_radius: 5,
   point_shooting_scalar: 0.3,
   draw_force_lines: false,
   bounce_offending_multiplier: -0.5,
@@ -293,7 +312,7 @@ var firm_crystal_config_002 = {
   gravity_strength: 0.1,
   interaction_cutoff_in_equilibriums: 2.0,
   equilibrium_distance: 40.0,
-  point_radius: 5,
+  new_point_radius: 5,
   point_shooting_scalar: 0.3,
   draw_force_lines: false,
   bounce_offending_multiplier: -0.5,
@@ -311,7 +330,8 @@ var firm_crystal_config_003 = {
   gravity_strength: 0.1,
   interaction_cutoff_in_equilibriums: 2.0,
   equilibrium_distance: 40.0,
-  point_radius: 5,
+  new_point_radius: 5,
+  new_point_color: "random",
   point_shooting_scalar: 0.3,
   draw_force_lines: false,
   bounce_offending_multiplier: -0.5,
@@ -329,7 +349,7 @@ var sinister_spheres_config_000 = {
   gravity_strength: 0.1,
   interaction_cutoff_in_equilibriums: 2.0,
   equilibrium_distance: 50.0,
-  point_radius: 2,
+  new_point_radius: 2,
   point_shooting_scalar: 0.3,
   draw_force_lines: false,
   bounce_offending_multiplier: -0.5,
@@ -347,7 +367,7 @@ var polyhedra_config_000 = {
   gravity_strength: 0.0,
   interaction_cutoff_in_equilibriums: 2.0,
   equilibrium_distance: 50.0,
-  point_radius: 5,
+  new_point_radius: 5,
   point_shooting_scalar: 0.3,
   draw_force_lines: true,
   bounce_offending_multiplier: -0.5,
@@ -365,7 +385,7 @@ var billiard_ball_config_000 = {
   gravity_strength: 0.1,
   interaction_cutoff_in_equilibriums: 1,
   equilibrium_distance: 60,
-  point_radius: 30,
+  new_point_radius: 30,
   point_shooting_scalar: 0.3,
   draw_force_lines: false,
   bounce_offending_multiplier: -0.9,
@@ -401,6 +421,8 @@ var drag_origin_y = 0;
 var shift_pressed = false;
 var mouse_pressed = false;
 
+var ticks_since_drag_start = 0;
+
 var points_to_drag = [];
 
 // Initialize canvas object size based on above defined heights
@@ -419,7 +441,7 @@ var handle_mouse_up = function(event) {
       canvas.style.cursor = "crosshair";
       world.add_point(new Point(new Vector(drag_origin_x, drag_origin_y), 
                                 (new Vector(event.pageX - x_offset, event.pageY - y_offset)).subtract(new Vector(drag_origin_x, drag_origin_y)).scale(sim_config.point_shooting_scalar), 
-                                get_random_color(), sim_config.point_radius, sim_config.equilibrium_distance));
+                                choose_point_color(), sim_config.new_point_radius, sim_config.equilibrium_distance));
     }
     //shift_pressed = false; // Reset shift key no matter what if mouse came up
   }
@@ -427,17 +449,19 @@ var handle_mouse_up = function(event) {
 var handle_mouse_down = function(event) {
   mouse_pressed = true;
   current_mouse_x = drag_origin_x = event.pageX - x_offset;
-  current_mouse_y = drag_origin_y =event.pageY - y_offset;
+  current_mouse_y = drag_origin_y = event.pageY - y_offset;
   points_to_drag = [];
   if (shift_pressed) {
     canvas.style.cursor = "pointer"; 
   } else {
     canvas.style.cursor = "move";
+    ticks_since_drag_start = 0;
     for (var i=0; i < world.points.length; i++) {
       var point = world.points[i];
       if (point.position.subtract(new Vector(current_mouse_x, current_mouse_y)).magnitude() < sim_config.drag_selection_radius) points_to_drag.push(point);
     }
   }
+  event.preventDefault();
 };
 var handle_key_down = function(event) {
   if (event.keyCode == 16) {
@@ -464,13 +488,14 @@ var handle_mouse_over = function(event) {
   //shift_pressed = false;
   //mouse_pressed = false;
   //canvas.style.cursor = "crosshair";
+  $(this).focus();
 };
 
 var quick_populate = function(n) {
   for (var i=0; i < n; i++) {
     world.add_point(new Point(new Vector(Math.random() * width, Math.random() * height), 
                                 new Vector(0, 0), 
-                                get_random_color(), sim_config.point_radius, sim_config.equilibrium_distance));
+                                choose_point_color(), sim_config.new_point_radius, sim_config.equilibrium_distance));
   }
 };
 
@@ -491,9 +516,21 @@ var populate_controls = function(controls_element, sim_config) {
         "</form>"
       ).submit(
         (function(property_name) {
-          return function(e) { 
-            console.log($(this).find("input").first().val());
-            sim_config[property_name] = parseFloat($(this).find("input").first().val()); 
+          return function(e) {
+            //console.log($(this).find("input").first().val());
+            $(this).css("backgroundColor", "#0F0");
+            $(this).animate({
+              backgroundColor: "#FFF"
+            });
+            var value = $(this).find("input").first().val();
+            var type_of = typeof sim_config[property_name];
+            if (type_of == "string") {
+              sim_config[property_name] = value;
+            } else if (type_of == "boolean") {
+              sim_config[property_name] = (value == "true" || value == "1" || value == "yes");
+            } else if (type_of == "number") {
+              sim_config[property_name] = parseFloat(value); 
+            }
             e.preventDefault();
           };
         })(k)

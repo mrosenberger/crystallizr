@@ -5,7 +5,6 @@
   margin: 5 auto;
 }
 
-
 .control-wrapper {
   display: inline-block;
   width: 180px;
@@ -31,7 +30,7 @@
 
 #simulation-canvas {
   display: block;
-  cursor:default;
+  cursor: default;
   -webkit-touch-callout: none;
   -webkit-user-select: none;
   -khtml-user-select: none;
