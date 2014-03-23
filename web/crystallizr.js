@@ -69,6 +69,8 @@ World.prototype.update_velocities = function(delta) {
       var from_balance = Math.abs(distance - point.balance_distance);
       //var color_val = (distance / (sim_config.new_point_equilibrium_distance * sim_config.interaction_cutoff_in_equilibriums)) * 255;
       context.strokeStyle = sim_config.force_lines_color;
+      var beforeLineWidth = context.lineWidth;
+      context.lineWidth = sim_config.force_lines_width;
       if (distance > (point.balance_distance * sim_config.interaction_cutoff_in_equilibriums)) {
 
       } else if (distance > point.balance_distance) { // Point is outside balance, attract
@@ -97,6 +99,8 @@ World.prototype.update_velocities = function(delta) {
           context.stroke();
         }
       }
+
+      context.lineWidth = beforeLineWidth;
     }
   }
 };
@@ -316,6 +320,7 @@ var firm_crystal_config_003 = {
   interaction_cutoff_in_equilibriums: 2.0,
   draw_force_lines: false,
   force_lines_color: "#CCC",
+  force_lines_width: 1,
   bounce_offending_multiplier: -0.5,
   bounce_non_offending_multiplier: 1.0,
   screen_clear_opacity: 0.5,
@@ -474,7 +479,7 @@ var populate_controls = function(controls_element, sim_config) {
     controlElement.bind("submit", 
       (function(property_name) {
         return function(e) {
-          var value = $(this).find("input").first().val();
+          var value = _.string.strip($(this).find("input").first().val());
           e.preventDefault();
           if (!value) return;
           var type_of = typeof sim_config[property_name];
@@ -493,7 +498,7 @@ var populate_controls = function(controls_element, sim_config) {
     controlElement.find("input").bind("blur", 
       (function(property_name) {
         return function(e) {
-          var value = $(this).val();
+          var value = _.string.strip($(this).val());
           e.preventDefault();
           if (!value) return;
           var type_of = typeof sim_config[property_name];
@@ -627,4 +632,3 @@ window.setInterval(function() {
   render_world(world, context);
   world.tick(1.0);
 }, 0);
-
