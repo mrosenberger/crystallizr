@@ -67,8 +67,8 @@ World.prototype.update_velocities = function(delta) {
       var point_to_target = point.position.subtract(target.position);
       var distance = point_to_target.magnitude();
       var from_balance = Math.abs(distance - point.balance_distance);
-      //var color_val = (distance / (sim_config.equilibrium_distance * sim_config.interaction_cutoff_in_equilibriums)) * 255;
-      context.strokeStyle = "gray";
+      //var color_val = (distance / (sim_config.new_point_equilibrium_distance * sim_config.interaction_cutoff_in_equilibriums)) * 255;
+      context.strokeStyle = sim_config.force_lines_color;
       if (distance > (point.balance_distance * sim_config.interaction_cutoff_in_equilibriums)) {
 
       } else if (distance > point.balance_distance) { // Point is outside balance, attract
@@ -105,23 +105,23 @@ World.prototype.bound_points = function(delta) {
   for (var i=0; i < this.points.length; i++) {
     var point = this.points[i];
     if (point.position.x > this.x_size - point.radius) {
-      point.velocity.x *= sim_config.wall_bounce_offending_coordinate_multiplier;
-      point.velocity.y *= sim_config.wall_bounce_non_offending_coordinate_multiplier;
+      point.velocity.x *= sim_config.bounce_offending_multiplier;
+      point.velocity.y *= sim_config.bounce_non_offending_multiplier;
       point.position.x = this.x_size - point.radius;
     }
     if (point.position.x < point.radius) {
-      point.velocity.x *= sim_config.wall_bounce_offending_coordinate_multiplier;
-      point.velocity.y *= sim_config.wall_bounce_non_offending_coordinate_multiplier;
+      point.velocity.x *= sim_config.bounce_offending_multiplier;
+      point.velocity.y *= sim_config.bounce_non_offending_multiplier;
       point.position.x = point.radius;
     }
     if (point.position.y > this.y_size - point.radius) {
-      point.velocity.y *= sim_config.wall_bounce_offending_coordinate_multiplier;
-      point.velocity.x *= sim_config.wall_bounce_non_offending_coordinate_multiplier;
+      point.velocity.y *= sim_config.bounce_offending_multiplier;
+      point.velocity.x *= sim_config.bounce_non_offending_multiplier;
       point.position.y = this.y_size - point.radius;
     }
     if (point.position.y < point.radius) {
-      point.velocity.y *= sim_config.wall_bounce_offending_coordinate_multiplier;
-      point.velocity.x *= sim_config.wall_bounce_non_offending_coordinate_multiplier;
+      point.velocity.y *= sim_config.bounce_offending_multiplier;
+      point.velocity.x *= sim_config.bounce_non_offending_multiplier;
       point.position.y = point.radius;
     }
   }
@@ -179,6 +179,17 @@ World.prototype.tick = function(delta) {
   this.update_positions(delta);
   this.bound_points(delta);
   if (mouse_pressed && !shift_pressed) {
+
+    ticks_since_drag_start++;
+    var before = context.globalAlpha;
+    context.globalAlpha = Math.max(0.0, 1.0 - (0.1 * ticks_since_drag_start));
+    context.beginPath();
+    context.arc(current_mouse_x, current_mouse_y, sim_config.drag_selection_radius, 0, 2 * Math.PI, false);
+    context.lineWidth = 1;
+    context.strokeStyle = '#FFF';
+    context.stroke();
+    context.globalAlpha = before;
+
     for (var i=0; i < points_to_drag.length; i++) {
       var point = points_to_drag[i];
       point.accelerate((new Vector(current_mouse_x, current_mouse_y).subtract(point.position)).scale(0.01));
@@ -196,6 +207,14 @@ function get_random_color() {
   }
   return color;
 };
+
+function choose_point_color() {
+  if (_.string.strip(sim_config.new_point_color) == "random") {
+    return get_random_color();
+  } else {
+    return sim_config.new_point_color;
+  }
+}
 
 function render_world(world, context) {
   //if (mouse_pressed && shift_pressed) {
@@ -236,19 +255,6 @@ var get_offset = function(el) {
     return { top: _y, left: _x };
 };
 
-// Calculate handy values based on windows size
-var w = window,
-    d = document,
-    e = d.documentElement,
-    g = d.getElementsByTagName('body')[0],
-    x = w.innerWidth || e.clientWidth || g.clientWidth,
-    y = w.innerHeight|| e.clientHeight|| g.clientHeight;
-
-// Height of the canvas and world
-var width = x * 0.95;
-var height = y * 0.9;
-
-
 // Parameters of simulation
 var firm_crystal_config_000 = {
   attraction_scalar: 0.0001,
@@ -256,13 +262,13 @@ var firm_crystal_config_000 = {
   drag_multiplier: 0.95,
   gravity_strength: 0.1,
   interaction_cutoff_in_equilibriums: 2.0,
-  equilibrium_distance: 50.0,
-  point_radius: 5,
+  new_point_equilibrium_distance: 50.0,
+  new_point_radius: 5,
   point_shooting_scalar: 0.3,
   draw_force_lines: false,
-  wall_bounce_offending_coordinate_multiplier: -0.5,
-  wall_bounce_non_offending_coordinate_multiplier: 0.5,
-  initial_population: 100,
+  force_lines_color: "#CCC",
+  bounce_offending_multiplier: -0.5,
+  bounce_non_offending_multiplier: 1.0,
   screen_clear_opacity: 0.5,
   screen_clear_opacity_dragging: 0.5,
   drag_selection_radius: 150
@@ -274,13 +280,12 @@ var firm_crystal_config_001 = {
   drag_multiplier: 0.95,
   gravity_strength: 0.1,
   interaction_cutoff_in_equilibriums: 2.0,
-  equilibrium_distance: 40.0,
-  point_radius: 5,
+  new_point_equilibrium_distance: 40.0,
+  new_point_radius: 5,
   point_shooting_scalar: 0.3,
   draw_force_lines: false,
-  wall_bounce_offending_coordinate_multiplier: -0.5,
-  wall_bounce_non_offending_coordinate_multiplier: 0.5,
-  initial_population: 100,
+  bounce_offending_multiplier: -0.5,
+  bounce_non_offending_multiplier: 0.5,
   screen_clear_opacity: 0.5,
   screen_clear_opacity_dragging: 0.5,
   drag_selection_radius: 100
@@ -292,13 +297,12 @@ var firm_crystal_config_002 = {
   drag_multiplier: 0.95,
   gravity_strength: 0.1,
   interaction_cutoff_in_equilibriums: 2.0,
-  equilibrium_distance: 40.0,
-  point_radius: 5,
+  new_point_equilibrium_distance: 40.0,
+  new_point_radius: 5,
   point_shooting_scalar: 0.3,
   draw_force_lines: false,
-  wall_bounce_offending_coordinate_multiplier: -0.5,
-  wall_bounce_non_offending_coordinate_multiplier: 0.5,
-  initial_population: 100,
+  bounce_offending_multiplier: -0.5,
+  bounce_non_offending_multiplier: 0.5,
   screen_clear_opacity: 0.5,
   screen_clear_opacity_dragging: 0.5,
   drag_selection_radius: 100
@@ -310,16 +314,16 @@ var firm_crystal_config_003 = {
   drag_multiplier: 0.95,
   gravity_strength: 0.1,
   interaction_cutoff_in_equilibriums: 2.0,
-  equilibrium_distance: 40.0,
-  point_radius: 5,
-  point_shooting_scalar: 0.3,
   draw_force_lines: false,
-  wall_bounce_offending_coordinate_multiplier: -0.5,
-  wall_bounce_non_offending_coordinate_multiplier: 0.5,
-  initial_population: 150,
+  force_lines_color: "#CCC",
+  bounce_offending_multiplier: -0.5,
+  bounce_non_offending_multiplier: 1.0,
   screen_clear_opacity: 0.5,
-  screen_clear_opacity_dragging: 0.5,
-  drag_selection_radius: 80
+  point_shooting_scalar: 0.3,
+  drag_selection_radius: 80,
+  new_point_equilibrium_distance: 40.0,
+  new_point_radius: 3,
+  new_point_color: "random"
 };
 
 var sinister_spheres_config_000 = {
@@ -328,13 +332,12 @@ var sinister_spheres_config_000 = {
   drag_multiplier: 0.95,
   gravity_strength: 0.1,
   interaction_cutoff_in_equilibriums: 2.0,
-  equilibrium_distance: 50.0,
-  point_radius: 2,
+  new_point_equilibrium_distance: 50.0,
+  new_point_radius: 2,
   point_shooting_scalar: 0.3,
   draw_force_lines: false,
-  wall_bounce_offending_coordinate_multiplier: -0.5,
-  wall_bounce_non_offending_coordinate_multiplier: 1,
-  initial_population: 100,
+  bounce_offending_multiplier: -0.5,
+  bounce_non_offending_multiplier: 1,
   screen_clear_opacity: 0.5,
   screen_clear_opacity_dragging: 0.5,
   drag_selection_radius: 100
@@ -346,13 +349,12 @@ var polyhedra_config_000 = {
   drag_multiplier: 0.98,
   gravity_strength: 0.0,
   interaction_cutoff_in_equilibriums: 2.0,
-  equilibrium_distance: 50.0,
-  point_radius: 5,
+  new_point_equilibrium_distance: 50.0,
+  new_point_radius: 5,
   point_shooting_scalar: 0.3,
   draw_force_lines: true,
-  wall_bounce_offending_coordinate_multiplier: -0.5,
-  wall_bounce_non_offending_coordinate_multiplier: 0.9,
-  initial_population: 100,
+  bounce_offending_multiplier: -0.5,
+  bounce_non_offending_multiplier: 0.9,
   screen_clear_opacity: 0.5,
   screen_clear_opacity_dragging: 0.5,
   drag_selection_radius: 100
@@ -364,51 +366,16 @@ var billiard_ball_config_000 = {
   drag_multiplier: 0.98,
   gravity_strength: 0.1,
   interaction_cutoff_in_equilibriums: 1,
-  equilibrium_distance: 60,
-  point_radius: 30,
+  new_point_equilibrium_distance: 60,
+  new_point_radius: 30,
   point_shooting_scalar: 0.3,
   draw_force_lines: false,
-  wall_bounce_offending_coordinate_multiplier: -0.9,
-  wall_bounce_non_offending_coordinate_multiplier: 0.9,
-  initial_population: 100,
+  bounce_offending_multiplier: -0.9,
+  bounce_non_offending_multiplier: 0.9,
   screen_clear_opacity: 0.5,
   screen_clear_opacity_dragging: 0.1,
   drag_selection_radius: 100
 };
-
-var sim_config = firm_crystal_config_003;
-
-// Canvas and context
-var canvas = document.getElementById("canvas-0");
-var context = canvas.getContext("2d");
-
-// Give the canvas focus
-canvas.focus();
-
-// Offsets based on canvas position in page
-var canvas_offset = get_offset(canvas);
-var x_offset = canvas_offset.left;
-var y_offset = canvas_offset.top;
-
-// Used as temporary variables to hold origin of a drag motion
-var current_mouse_x = 0;
-var current_mouse_y = 0;
-
-var drag_origin_x = 0;
-var drag_origin_y = 0;
-
-// Toggles to hold state of shift and mouse
-var shift_pressed = false;
-var mouse_pressed = false;
-
-var points_to_drag = [];
-
-// Initialize canvas object size based on above defined heights
-canvas.width = width;
-canvas.height = height;
-
-// Create world with above defined heights
-var world = new World(width, height);
 
 // Define event listeners
 var handle_mouse_up = function(event) { 
@@ -419,7 +386,7 @@ var handle_mouse_up = function(event) {
       canvas.style.cursor = "crosshair";
       world.add_point(new Point(new Vector(drag_origin_x, drag_origin_y), 
                                 (new Vector(event.pageX - x_offset, event.pageY - y_offset)).subtract(new Vector(drag_origin_x, drag_origin_y)).scale(sim_config.point_shooting_scalar), 
-                                get_random_color(), sim_config.point_radius, sim_config.equilibrium_distance));
+                                choose_point_color(), sim_config.new_point_radius, sim_config.new_point_equilibrium_distance));
     }
     //shift_pressed = false; // Reset shift key no matter what if mouse came up
   }
@@ -427,17 +394,19 @@ var handle_mouse_up = function(event) {
 var handle_mouse_down = function(event) {
   mouse_pressed = true;
   current_mouse_x = drag_origin_x = event.pageX - x_offset;
-  current_mouse_y = drag_origin_y =event.pageY - y_offset;
+  current_mouse_y = drag_origin_y = event.pageY - y_offset;
   points_to_drag = [];
   if (shift_pressed) {
     canvas.style.cursor = "pointer"; 
   } else {
     canvas.style.cursor = "move";
+    ticks_since_drag_start = 0;
     for (var i=0; i < world.points.length; i++) {
       var point = world.points[i];
       if (point.position.subtract(new Vector(current_mouse_x, current_mouse_y)).magnitude() < sim_config.drag_selection_radius) points_to_drag.push(point);
     }
   }
+  event.preventDefault();
 };
 var handle_key_down = function(event) {
   if (event.keyCode == 16) {
@@ -464,15 +433,155 @@ var handle_mouse_over = function(event) {
   //shift_pressed = false;
   //mouse_pressed = false;
   //canvas.style.cursor = "crosshair";
+  $(this).focus();
 };
 
 var quick_populate = function(n) {
   for (var i=0; i < n; i++) {
     world.add_point(new Point(new Vector(Math.random() * width, Math.random() * height), 
                                 new Vector(0, 0), 
-                                get_random_color(), sim_config.point_radius, sim_config.equilibrium_distance));
+                                choose_point_color(), sim_config.new_point_radius, sim_config.new_point_equilibrium_distance));
   }
 };
+
+var populate_controls = function(controls_element, sim_config) {
+
+  function prepare_control_name(s) {
+    return _.string.capitalize(s.replace(/_/g, " "));
+  };
+
+  function animateSubmit(element) {
+    var $el = $(element);
+    $el.css("backgroundColor", "#0F0");
+    $el.animate({
+      backgroundColor: "#FFF"
+    });
+  };
+
+  _.each(sim_config, function(v, k) {
+    controls_element.append(
+      $(
+        "<div class='control-wrapper'>" + 
+          "<form>" +
+            "<span class='control-name'>" + 
+              prepare_control_name(k) +
+            "</span> " + 
+            "<input type='text' class='control-input-text' value='" + v + "'>" + 
+          "</form>" + 
+        "</div>"
+      ).submit(
+        (function(property_name) {
+          return function(e) {
+            var value = $(this).find("input").first().val();
+            e.preventDefault();
+            if (!value) return;
+            var type_of = typeof sim_config[property_name];
+            animateSubmit(this);
+            if (type_of == "string") {
+              sim_config[property_name] = value;
+            } else if (type_of == "boolean") {
+              sim_config[property_name] = (value.toLowerCase() == "true" || value == "1" || value.toLowerCase() == "yes");
+            } else if (type_of == "number") {
+              sim_config[property_name] = parseFloat(value); 
+            }
+          };
+        })(k)
+      )
+    );
+  });
+
+  controls_element.append(
+    $(
+      "<div class='control-wrapper'>" + 
+        "<form>" + 
+          "<span class='control-name control-name-special'>Create particles</span>" + 
+          "<input type='text' value='20' class='control-input-text' style='display: inline;'>" + 
+          "<input type='submit' class='control-input-button' value='Create' style='display: inline;'>" + 
+        "</form>" + 
+      "</div>"
+    ).submit(function(e) {
+      animateSubmit(this);
+      var number = parseInt($(this).find(".control-input-text").first().val());
+      quick_populate(number);
+      e.preventDefault();
+    })
+  );
+
+  controls_element.append(
+    $(
+      "<div class='control-wrapper'>" + 
+        "<form>" + 
+          "<span class='control-name control-name-special'>Destroy all particles</span>" + 
+          "<input type='submit' class='control-input-button' value='Reset' style='display: inline;'>" + 
+        "</form>" + 
+      "</div>"
+    ).submit(function(e) {
+      animateSubmit(this);
+      world.points = [];
+      e.preventDefault();
+    })
+  );
+
+  controls_element.append(
+    $(
+      "<div class='control-wrapper instructions-cell'>" + 
+        "<span>Click and drag to move points. Hold shift and drag to create points. Press enter after editing a field.</span>" + 
+      "</div>"
+    )
+  );
+
+};
+
+var sim_config = firm_crystal_config_003;
+
+populate_controls($("#simulation-controls"), sim_config);
+
+// Calculate handy values based on windows size
+var w = window,
+    d = document,
+    e = d.documentElement,
+    g = d.getElementsByTagName('body')[0],
+    x = w.innerWidth || e.clientWidth || g.clientWidth,
+    y = w.innerHeight|| e.clientHeight|| g.clientHeight;
+
+// Height of the canvas and world
+var width = x * 0.95; // Make sure to keep this synced up with the css
+//var height = y * 0.65;
+var height = y - $("#simulation-controls").height() - 20;
+
+// Canvas and context
+var canvas = document.getElementById("simulation-canvas");
+var context = canvas.getContext("2d");
+
+// Give the canvas focus
+canvas.focus();
+
+// Offsets based on canvas position in page
+var canvas_offset = get_offset(canvas);
+var x_offset = canvas_offset.left;
+var y_offset = canvas_offset.top;
+
+// Used as temporary variables to hold origin of a drag motion
+var current_mouse_x = 0;
+var current_mouse_y = 0;
+
+var drag_origin_x = 0;
+var drag_origin_y = 0;
+
+// Toggles to hold state of shift and mouse
+var shift_pressed = false;
+var mouse_pressed = false;
+
+var ticks_since_drag_start = 0;
+
+var points_to_drag = [];
+
+// Initialize canvas object size based on above defined heights
+canvas.width = width;
+canvas.height = height;
+
+// Create world with above defined heights
+var world = new World(width, height);
 
 // Assign event listeners
 canvas.addEventListener("mouseup", handle_mouse_up, false);
@@ -487,11 +596,12 @@ canvas.addEventListener("mouseover", handle_mouse_over, false);
 context.fillStyle = "green";
 context.fillRect(0, 0, context.canvas.width, context.canvas.height);
 
-quick_populate(sim_config.initial_population);
+quick_populate(50);
 
 // Start the main game loop
 window.setInterval(function() {
+  //console.log(i++);
   render_world(world, context);
   world.tick(1.0);
-  
 }, 0);
+
