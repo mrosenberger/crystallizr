@@ -67,7 +67,7 @@ World.prototype.update_velocities = function(delta) {
       var point_to_target = point.position.subtract(target.position);
       var distance = point_to_target.magnitude();
       var from_balance = Math.abs(distance - point.balance_distance);
-      //var color_val = (distance / (sim_config.equilibrium_distance * sim_config.interaction_cutoff_in_equilibriums)) * 255;
+      //var color_val = (distance / (sim_config.new_point_equilibrium_distance * sim_config.interaction_cutoff_in_equilibriums)) * 255;
       context.strokeStyle = sim_config.force_lines_color;
       if (distance > (point.balance_distance * sim_config.interaction_cutoff_in_equilibriums)) {
 
@@ -255,18 +255,6 @@ var get_offset = function(el) {
     return { top: _y, left: _x };
 };
 
-// Calculate handy values based on windows size
-var w = window,
-    d = document,
-    e = d.documentElement,
-    g = d.getElementsByTagName('body')[0],
-    x = w.innerWidth || e.clientWidth || g.clientWidth,
-    y = w.innerHeight|| e.clientHeight|| g.clientHeight;
-
-// Height of the canvas and world
-var width = x * 0.95; // Make sure to keep this synced up with the css
-var height = y * 0.65;
-
 // Parameters of simulation
 var firm_crystal_config_000 = {
   attraction_scalar: 0.0001,
@@ -274,7 +262,7 @@ var firm_crystal_config_000 = {
   drag_multiplier: 0.95,
   gravity_strength: 0.1,
   interaction_cutoff_in_equilibriums: 2.0,
-  equilibrium_distance: 50.0,
+  new_point_equilibrium_distance: 50.0,
   new_point_radius: 5,
   point_shooting_scalar: 0.3,
   draw_force_lines: false,
@@ -292,7 +280,7 @@ var firm_crystal_config_001 = {
   drag_multiplier: 0.95,
   gravity_strength: 0.1,
   interaction_cutoff_in_equilibriums: 2.0,
-  equilibrium_distance: 40.0,
+  new_point_equilibrium_distance: 40.0,
   new_point_radius: 5,
   point_shooting_scalar: 0.3,
   draw_force_lines: false,
@@ -309,7 +297,7 @@ var firm_crystal_config_002 = {
   drag_multiplier: 0.95,
   gravity_strength: 0.1,
   interaction_cutoff_in_equilibriums: 2.0,
-  equilibrium_distance: 40.0,
+  new_point_equilibrium_distance: 40.0,
   new_point_radius: 5,
   point_shooting_scalar: 0.3,
   draw_force_lines: false,
@@ -326,7 +314,6 @@ var firm_crystal_config_003 = {
   drag_multiplier: 0.95,
   gravity_strength: 0.1,
   interaction_cutoff_in_equilibriums: 2.0,
-  equilibrium_distance: 40.0,
   draw_force_lines: false,
   force_lines_color: "#CCC",
   bounce_offending_multiplier: -0.5,
@@ -334,6 +321,7 @@ var firm_crystal_config_003 = {
   screen_clear_opacity: 0.5,
   point_shooting_scalar: 0.3,
   drag_selection_radius: 80,
+  new_point_equilibrium_distance: 40.0,
   new_point_radius: 3,
   new_point_color: "random"
 };
@@ -344,7 +332,7 @@ var sinister_spheres_config_000 = {
   drag_multiplier: 0.95,
   gravity_strength: 0.1,
   interaction_cutoff_in_equilibriums: 2.0,
-  equilibrium_distance: 50.0,
+  new_point_equilibrium_distance: 50.0,
   new_point_radius: 2,
   point_shooting_scalar: 0.3,
   draw_force_lines: false,
@@ -361,7 +349,7 @@ var polyhedra_config_000 = {
   drag_multiplier: 0.98,
   gravity_strength: 0.0,
   interaction_cutoff_in_equilibriums: 2.0,
-  equilibrium_distance: 50.0,
+  new_point_equilibrium_distance: 50.0,
   new_point_radius: 5,
   point_shooting_scalar: 0.3,
   draw_force_lines: true,
@@ -378,7 +366,7 @@ var billiard_ball_config_000 = {
   drag_multiplier: 0.98,
   gravity_strength: 0.1,
   interaction_cutoff_in_equilibriums: 1,
-  equilibrium_distance: 60,
+  new_point_equilibrium_distance: 60,
   new_point_radius: 30,
   point_shooting_scalar: 0.3,
   draw_force_lines: false,
@@ -389,42 +377,6 @@ var billiard_ball_config_000 = {
   drag_selection_radius: 100
 };
 
-var sim_config = firm_crystal_config_003;
-
-// Canvas and context
-var canvas = document.getElementById("simulation-canvas");
-var context = canvas.getContext("2d");
-
-// Give the canvas focus
-canvas.focus();
-
-// Offsets based on canvas position in page
-var canvas_offset = get_offset(canvas);
-var x_offset = canvas_offset.left;
-var y_offset = canvas_offset.top;
-
-// Used as temporary variables to hold origin of a drag motion
-var current_mouse_x = 0;
-var current_mouse_y = 0;
-
-var drag_origin_x = 0;
-var drag_origin_y = 0;
-
-// Toggles to hold state of shift and mouse
-var shift_pressed = false;
-var mouse_pressed = false;
-
-var ticks_since_drag_start = 0;
-
-var points_to_drag = [];
-
-// Initialize canvas object size based on above defined heights
-canvas.width = width;
-canvas.height = height;
-
-// Create world with above defined heights
-var world = new World(width, height);
-
 // Define event listeners
 var handle_mouse_up = function(event) { 
   if (mouse_pressed) {
@@ -434,7 +386,7 @@ var handle_mouse_up = function(event) {
       canvas.style.cursor = "crosshair";
       world.add_point(new Point(new Vector(drag_origin_x, drag_origin_y), 
                                 (new Vector(event.pageX - x_offset, event.pageY - y_offset)).subtract(new Vector(drag_origin_x, drag_origin_y)).scale(sim_config.point_shooting_scalar), 
-                                choose_point_color(), sim_config.new_point_radius, sim_config.equilibrium_distance));
+                                choose_point_color(), sim_config.new_point_radius, sim_config.new_point_equilibrium_distance));
     }
     //shift_pressed = false; // Reset shift key no matter what if mouse came up
   }
@@ -488,7 +440,7 @@ var quick_populate = function(n) {
   for (var i=0; i < n; i++) {
     world.add_point(new Point(new Vector(Math.random() * width, Math.random() * height), 
                                 new Vector(0, 0), 
-                                choose_point_color(), sim_config.new_point_radius, sim_config.equilibrium_distance));
+                                choose_point_color(), sim_config.new_point_radius, sim_config.new_point_equilibrium_distance));
   }
 };
 
@@ -580,6 +532,57 @@ var populate_controls = function(controls_element, sim_config) {
 
 };
 
+var sim_config = firm_crystal_config_003;
+
+populate_controls($("#simulation-controls"), sim_config);
+
+// Calculate handy values based on windows size
+var w = window,
+    d = document,
+    e = d.documentElement,
+    g = d.getElementsByTagName('body')[0],
+    x = w.innerWidth || e.clientWidth || g.clientWidth,
+    y = w.innerHeight|| e.clientHeight|| g.clientHeight;
+
+// Height of the canvas and world
+var width = x * 0.95; // Make sure to keep this synced up with the css
+//var height = y * 0.65;
+var height = y - $("#simulation-controls").height() - 20;
+
+// Canvas and context
+var canvas = document.getElementById("simulation-canvas");
+var context = canvas.getContext("2d");
+
+// Give the canvas focus
+canvas.focus();
+
+// Offsets based on canvas position in page
+var canvas_offset = get_offset(canvas);
+var x_offset = canvas_offset.left;
+var y_offset = canvas_offset.top;
+
+// Used as temporary variables to hold origin of a drag motion
+var current_mouse_x = 0;
+var current_mouse_y = 0;
+
+var drag_origin_x = 0;
+var drag_origin_y = 0;
+
+// Toggles to hold state of shift and mouse
+var shift_pressed = false;
+var mouse_pressed = false;
+
+var ticks_since_drag_start = 0;
+
+var points_to_drag = [];
+
+// Initialize canvas object size based on above defined heights
+canvas.width = width;
+canvas.height = height;
+
+// Create world with above defined heights
+var world = new World(width, height);
+
 // Assign event listeners
 canvas.addEventListener("mouseup", handle_mouse_up, false);
 canvas.addEventListener("mousedown", handle_mouse_down, false);
@@ -602,4 +605,3 @@ window.setInterval(function() {
   world.tick(1.0);
 }, 0);
 
-populate_controls($("#simulation-controls"), sim_config);
