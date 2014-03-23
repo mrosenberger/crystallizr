@@ -68,7 +68,7 @@ World.prototype.update_velocities = function(delta) {
       var distance = point_to_target.magnitude();
       var from_balance = Math.abs(distance - point.balance_distance);
       //var color_val = (distance / (sim_config.equilibrium_distance * sim_config.interaction_cutoff_in_equilibriums)) * 255;
-      context.strokeStyle = "gray";
+      context.strokeStyle = sim_config.force_lines_color;
       if (distance > (point.balance_distance * sim_config.interaction_cutoff_in_equilibriums)) {
 
       } else if (distance > point.balance_distance) { // Point is outside balance, attract
@@ -265,8 +265,7 @@ var w = window,
 
 // Height of the canvas and world
 var width = x * 0.95; // Make sure to keep this synced up with the css
-var height = y * 0.7;
-
+var height = y * 0.65;
 
 // Parameters of simulation
 var firm_crystal_config_000 = {
@@ -279,9 +278,9 @@ var firm_crystal_config_000 = {
   new_point_radius: 5,
   point_shooting_scalar: 0.3,
   draw_force_lines: false,
+  force_lines_color: "#CCC",
   bounce_offending_multiplier: -0.5,
   bounce_non_offending_multiplier: 1.0,
-  initial_population: 100,
   screen_clear_opacity: 0.5,
   screen_clear_opacity_dragging: 0.5,
   drag_selection_radius: 150
@@ -299,7 +298,6 @@ var firm_crystal_config_001 = {
   draw_force_lines: false,
   bounce_offending_multiplier: -0.5,
   bounce_non_offending_multiplier: 0.5,
-  initial_population: 100,
   screen_clear_opacity: 0.5,
   screen_clear_opacity_dragging: 0.5,
   drag_selection_radius: 100
@@ -317,7 +315,6 @@ var firm_crystal_config_002 = {
   draw_force_lines: false,
   bounce_offending_multiplier: -0.5,
   bounce_non_offending_multiplier: 0.5,
-  initial_population: 100,
   screen_clear_opacity: 0.5,
   screen_clear_opacity_dragging: 0.5,
   drag_selection_radius: 100
@@ -330,16 +327,15 @@ var firm_crystal_config_003 = {
   gravity_strength: 0.1,
   interaction_cutoff_in_equilibriums: 2.0,
   equilibrium_distance: 40.0,
-  new_point_radius: 5,
-  new_point_color: "random",
-  point_shooting_scalar: 0.3,
   draw_force_lines: false,
+  force_lines_color: "#CCC",
   bounce_offending_multiplier: -0.5,
   bounce_non_offending_multiplier: 1.0,
-  initial_population: 150,
   screen_clear_opacity: 0.5,
-  screen_clear_opacity_dragging: 0.5,
-  drag_selection_radius: 80
+  point_shooting_scalar: 0.3,
+  drag_selection_radius: 80,
+  new_point_radius: 3,
+  new_point_color: "random"
 };
 
 var sinister_spheres_config_000 = {
@@ -354,7 +350,6 @@ var sinister_spheres_config_000 = {
   draw_force_lines: false,
   bounce_offending_multiplier: -0.5,
   bounce_non_offending_multiplier: 1,
-  initial_population: 100,
   screen_clear_opacity: 0.5,
   screen_clear_opacity_dragging: 0.5,
   drag_selection_radius: 100
@@ -372,7 +367,6 @@ var polyhedra_config_000 = {
   draw_force_lines: true,
   bounce_offending_multiplier: -0.5,
   bounce_non_offending_multiplier: 0.9,
-  initial_population: 100,
   screen_clear_opacity: 0.5,
   screen_clear_opacity_dragging: 0.5,
   drag_selection_radius: 100
@@ -390,7 +384,6 @@ var billiard_ball_config_000 = {
   draw_force_lines: false,
   bounce_offending_multiplier: -0.9,
   bounce_non_offending_multiplier: 0.9,
-  initial_population: 100,
   screen_clear_opacity: 0.5,
   screen_clear_opacity_dragging: 0.1,
   drag_selection_radius: 100
@@ -505,38 +498,86 @@ var populate_controls = function(controls_element, sim_config) {
     return _.string.capitalize(s.replace(/_/g, " "));
   };
 
+  function animateSubmit(element) {
+    var $el = $(element);
+    $el.css("backgroundColor", "#0F0");
+    $el.animate({
+      backgroundColor: "#FFF"
+    });
+  };
+
   _.each(sim_config, function(v, k) {
     controls_element.append(
       $(
-        "<form class='control-wrapper'>" + 
-          "<span class='control-name'>" + 
-            prepare_control_name(k) +
-          "</span> " + 
-          "<input class='control-input' value='" + v + "'>" + 
-        "</form>"
+        "<div class='control-wrapper'>" + 
+          "<form>" +
+            "<span class='control-name'>" + 
+              prepare_control_name(k) +
+            "</span> " + 
+            "<input type='text' class='control-input-text' value='" + v + "'>" + 
+          "</form>" + 
+        "</div>"
       ).submit(
         (function(property_name) {
           return function(e) {
-            //console.log($(this).find("input").first().val());
-            $(this).css("backgroundColor", "#0F0");
-            $(this).animate({
-              backgroundColor: "#FFF"
-            });
             var value = $(this).find("input").first().val();
+            e.preventDefault();
+            if (!value) return;
             var type_of = typeof sim_config[property_name];
+            animateSubmit(this);
             if (type_of == "string") {
               sim_config[property_name] = value;
             } else if (type_of == "boolean") {
-              sim_config[property_name] = (value == "true" || value == "1" || value == "yes");
+              sim_config[property_name] = (value.toLowerCase() == "true" || value == "1" || value.toLowerCase() == "yes");
             } else if (type_of == "number") {
               sim_config[property_name] = parseFloat(value); 
             }
-            e.preventDefault();
           };
         })(k)
       )
     );
   });
+
+  controls_element.append(
+    $(
+      "<div class='control-wrapper'>" + 
+        "<form>" + 
+          "<span class='control-name control-name-special'>Create particles</span>" + 
+          "<input type='text' value='20' class='control-input-text' style='display: inline;'>" + 
+          "<input type='submit' class='control-input-button' value='Create' style='display: inline;'>" + 
+        "</form>" + 
+      "</div>"
+    ).submit(function(e) {
+      animateSubmit(this);
+      var number = parseInt($(this).find(".control-input-text").first().val());
+      quick_populate(number);
+      e.preventDefault();
+    })
+  );
+
+  controls_element.append(
+    $(
+      "<div class='control-wrapper'>" + 
+        "<form>" + 
+          "<span class='control-name control-name-special'>Destroy all particles</span>" + 
+          "<input type='submit' class='control-input-button' value='Reset' style='display: inline;'>" + 
+        "</form>" + 
+      "</div>"
+    ).submit(function(e) {
+      animateSubmit(this);
+      world.points = [];
+      e.preventDefault();
+    })
+  );
+
+  controls_element.append(
+    $(
+      "<div class='control-wrapper instructions-cell'>" + 
+        "<span>Click and drag to move points. Hold shift and drag to create points. Press enter after editing a field.</span>" + 
+      "</div>"
+    )
+  );
+
 };
 
 // Assign event listeners
@@ -552,9 +593,7 @@ canvas.addEventListener("mouseover", handle_mouse_over, false);
 context.fillStyle = "green";
 context.fillRect(0, 0, context.canvas.width, context.canvas.height);
 
-quick_populate(sim_config.initial_population);
-
-var i = 0;
+quick_populate(50);
 
 // Start the main game loop
 window.setInterval(function() {
