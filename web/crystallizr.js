@@ -73,9 +73,9 @@ World.prototype.update_velocities = function(delta) {
       context.lineWidth = sim_config.force_lines_width;
       if (distance > (point.balance_distance * sim_config.interaction_cutoff_in_equilibriums)) {
 
-      } else if (distance > point.balance_distance) { // Point is outside balance, attract
-        target.accelerate(point_to_target.scale(from_balance).scale(sim_config.attraction_scalar));
-        if (sim_config.draw_force_lines) {
+      } else if (distance > point.balance_distance) { // Point is outside balance, attract if same color
+        target.accelerate(point_to_target.scale(from_balance).scale(sim_config.attraction_scalar).scale((!sim_config.like_colors_attract || point.color==target.color) ? 1.0 : 0.0));
+        if (sim_config.draw_force_lines && (!sim_config.like_colors_attract || point.color==target.color)) {
           context.beginPath();
           context.moveTo(point.position.x, point.position.y);
           context.lineTo(target.position.x, target.position.y);
@@ -88,7 +88,7 @@ World.prototype.update_velocities = function(delta) {
         }
       } else { // Point is inside balance, repel
         target.accelerate(point_to_target.scale(from_balance).scale(sim_config.repulsion_scalar));
-        if (sim_config.draw_force_lines) {
+        if (sim_config.draw_force_lines && (!sim_config.like_colors_attract || point.color==target.color)) {
           context.beginPath();
           context.moveTo(point.position.x, point.position.y);
           context.lineTo(target.position.x, target.position.y);
@@ -347,7 +347,8 @@ var firm_crystal_config_004 = {
   drag_selection_radius: 80,
   new_point_equilibrium_distance: 40.0,
   new_point_radius: 3,
-  new_point_color: "random"
+  new_point_color: "random",
+  like_colors_attract: false
 };
 
 var sinister_spheres_config_000 = {
