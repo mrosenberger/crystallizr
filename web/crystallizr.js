@@ -331,6 +331,25 @@ var firm_crystal_config_003 = {
   new_point_color: "random"
 };
 
+var firm_crystal_config_004 = {
+  attraction_scalar: 0.0004,
+  repulsion_scalar: -0.021, 
+  drag_multiplier: 0.95,
+  gravity_strength: 0.1,
+  interaction_cutoff_in_equilibriums: 2.0,
+  draw_force_lines: true,
+  force_lines_color: "#CCC",
+  force_lines_width: 0.1,
+  bounce_offending_multiplier: -0.5,
+  bounce_non_offending_multiplier: 1.0,
+  screen_clear_opacity: 0.5,
+  point_shooting_scalar: 0.3,
+  drag_selection_radius: 80,
+  new_point_equilibrium_distance: 40.0,
+  new_point_radius: 3,
+  new_point_color: "random"
+};
+
 var sinister_spheres_config_000 = {
   attraction_scalar: 0.0015,
   repulsion_scalar: -0.001, 
@@ -560,7 +579,7 @@ var populate_controls = function(controls_element, sim_config) {
 
 };
 
-var sim_config = firm_crystal_config_003;
+var sim_config = firm_crystal_config_004;
 
 populate_controls($("#simulation-controls"), sim_config);
 
