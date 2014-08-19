@@ -60,48 +60,46 @@ World.prototype.add_point = function(point) {
 World.prototype.update_velocities = function(delta) {
   for (var i=0; i < this.points.length; i++) {
     var point = this.points[i];
-    //var twiceBalDistSquared = Math.pow(point.balance_distance * 2.0, 2.0); // Can optimize a LOT here. Skip some square roots, skip cals if outside, etc.
     for (var j=0; j < this.points.length; j++) {
       if (i == j) continue; // Skip if we're on the same point
       var target = this.points[j];
       var point_to_target = point.position.subtract(target.position);
       var distance = point_to_target.magnitude();
       var from_balance = Math.abs(distance - point.balance_distance);
-      //var color_val = (distance / (sim_config.new_point_equilibrium_distance * sim_config.interaction_cutoff_in_equilibriums)) * 255;
       context.strokeStyle = sim_config.force_lines_color;
       var beforeLineWidth = context.lineWidth;
       context.lineWidth = sim_config.force_lines_width;
-      if (distance > (point.balance_distance * sim_config.interaction_cutoff_in_equilibriums)) {
+      if (distance < sim_config.remove_points_closer_than && !point.delete_me) {
+        target.delete_me = true;
+        continue;
+      } else if (distance > (point.balance_distance * sim_config.interaction_cutoff_in_equilibriums)) {
 
-      } else if (distance > point.balance_distance) { // Point is outside balance, attract
-        target.accelerate(point_to_target.scale(from_balance).scale(sim_config.attraction_scalar));
-        if (sim_config.draw_force_lines) {
+      } else if (distance > point.balance_distance) { // Point is outside balance, attract if same color
+        target.accelerate(point_to_target.scale(from_balance).scale(sim_config.attraction_scalar).scale((!sim_config.only_like_colors_attract || point.color==target.color) ? 1.0 : 0.0));
+        if (sim_config.draw_force_lines && (!sim_config.only_like_colors_attract || point.color==target.color)) {
           context.beginPath();
           context.moveTo(point.position.x, point.position.y);
           context.lineTo(target.position.x, target.position.y);
           context.closePath();
-          //context.strokeStyle = "green";
-          //console.log(from_balance);
-          //context.strokeStyle = "rgba(0," + 255 - color_val + "," + color_val + ",1.0)";
-          //context.strokeStyle = "rgba(200, 200, 200, 1.0)";
           context.stroke();
         }
       } else { // Point is inside balance, repel
         target.accelerate(point_to_target.scale(from_balance).scale(sim_config.repulsion_scalar));
-        if (sim_config.draw_force_lines) {
+        if (sim_config.draw_force_lines && (!sim_config.only_like_colors_attract || point.color==target.color)) {
           context.beginPath();
           context.moveTo(point.position.x, point.position.y);
           context.lineTo(target.position.x, target.position.y);
           context.closePath();
-          //context.strokeStyle = "rgba(100,0," + from_balance + ",1)";
-          //context.strokeStyle = "red";
-          //context.strokeStyle = "rgba(0," + (255 - color_val) + "," + color_val + ",1.0)";
           context.stroke();
         }
       }
-
       context.lineWidth = beforeLineWidth;
     }
+  }
+
+  for (var i=this.points.length-1; i >= 0; i--) {
+    var point = this.points[i];
+    if (point.delete_me) this.points.splice(i, 1);
   }
 };
 
@@ -131,29 +129,6 @@ World.prototype.bound_points = function(delta) {
   }
 };
 
-World.prototype.bound_points_deprecated = function(delta) {
-  for (var i=0; i < this.points.length; i++) {
-    var point = this.points[i];
-    var friction = 0; // This is dumb. Might just swap out with a =[0, 0] at some point
-    if (point.position.x > this.x_size - point.radius) {
-      point.velocity = point.velocity.scale(friction);
-      point.position.x = this.x_size - point.radius;
-    }
-    if (point.position.x < point.radius) {
-      point.velocity = point.velocity.scale(friction);
-      point.position.x = point.radius;
-    }
-    if (point.position.y > this.y_size - point.radius) {
-      point.velocity = point.velocity.scale(friction);
-      point.position.y = this.y_size - point.radius;
-    }
-    if (point.position.y < point.radius) {
-      point.velocity = point.velocity.scale(friction);
-      point.position.y = point.radius;
-    }
-  }
-};
-
 World.prototype.apply_drag_to_points = function(delta) {
   for (var i=0; i < this.points.length; i++) {
     var point = this.points[i];
@@ -177,7 +152,6 @@ World.prototype.apply_gravity_to_points = function(delta) {
 
 World.prototype.tick = function(delta) {
   this.update_velocities(delta);
-  //if (!(mouse_pressed && shift_pressed)) this.apply_gravity_to_points(delta);
   this.apply_gravity_to_points(delta);
   this.apply_drag_to_points(delta);
   this.update_positions(delta);
@@ -221,11 +195,6 @@ function choose_point_color() {
 }
 
 function render_world(world, context) {
-  //if (mouse_pressed && shift_pressed) {
-  //  context.fillStyle = "rgba(0, 0, 0, " + sim_config.screen_clear_opacity_dragging + ")";
-  //} else {
-  //  context.fillStyle = "rgba(0, 0, 0, " + sim_config.screen_clear_opacity + ")";
-  //}
   context.fillStyle = "rgba(0, 0, 0, " + sim_config.screen_clear_opacity + ")";
   context.fillRect(0, 0, context.canvas.width, context.canvas.height);
   for (var i=0; i < world.points.length; i++) {
@@ -246,6 +215,8 @@ function render_world(world, context) {
     context.strokeStyle = "orange";
     context.stroke();
   }
+
+  $("#total-point-count").text(world.points.length);
 };
 
 var get_offset = function(el) {
@@ -347,7 +318,9 @@ var firm_crystal_config_004 = {
   drag_selection_radius: 80,
   new_point_equilibrium_distance: 40.0,
   new_point_radius: 3,
-  new_point_color: "random"
+  new_point_color: "random",
+  only_like_colors_attract: false,
+  remove_points_closer_than: 0.01
 };
 
 var sinister_spheres_config_000 = {
@@ -484,13 +457,18 @@ var populate_controls = function(controls_element, sim_config) {
 
   _.each(sim_config, function(v, k) {
 
+    var type = typeof v;
+
     var controlElement = $(
       "<div class='control-wrapper'>" + 
         "<form>" +
           "<span class='control-name'>" + 
             prepare_control_name(k) +
           "</span> " + 
-          "<input type='text' class='control-input-text' value='" + v + "'>" + 
+          (type == "boolean" 
+            ? "<input type='checkbox' class='control-input-checkbox' " + (v ? "checked" : "") + ">"
+            : "<input type='text' class='control-input-text' value='" + v + "'>"
+          ) + 
         "</form>" + 
       "</div>"
     );
@@ -498,7 +476,8 @@ var populate_controls = function(controls_element, sim_config) {
     controlElement.bind("submit", 
       (function(property_name) {
         return function(e) {
-          var value = _.string.strip($(this).find("input").first().val());
+          var el = $(this).find("input").first()
+          var value = _.string.strip(el.val());
           e.preventDefault();
           if (!value) return;
           var type_of = typeof sim_config[property_name];
@@ -506,7 +485,6 @@ var populate_controls = function(controls_element, sim_config) {
           if (type_of == "string") {
             sim_config[property_name] = value;
           } else if (type_of == "boolean") {
-            sim_config[property_name] = (value.toLowerCase() == "true" || value == "1" || value.toLowerCase() == "yes");
           } else if (type_of == "number") {
             sim_config[property_name] = parseFloat(value); 
           }
@@ -517,7 +495,10 @@ var populate_controls = function(controls_element, sim_config) {
     controlElement.find("input").bind("blur", 
       (function(property_name) {
         return function(e) {
-          var value = _.string.strip($(this).val());
+          var el = $(this);
+          //var value = _.string.strip($(this).val());
+
+          var value = _.string.strip(el.val());
           e.preventDefault();
           if (!value) return;
           var type_of = typeof sim_config[property_name];
@@ -525,9 +506,26 @@ var populate_controls = function(controls_element, sim_config) {
           if (type_of == "string") {
             sim_config[property_name] = value;
           } else if (type_of == "boolean") {
-            sim_config[property_name] = (value.toLowerCase() == "true" || value == "1" || value.toLowerCase() == "yes");
           } else if (type_of == "number") {
             sim_config[property_name] = parseFloat(value); 
+          }
+        };
+      })(k)
+    );
+
+    controlElement.find("input").bind("change", 
+      (function(property_name) {
+        return function(e) {
+          var el = $(this);
+          //var value = _.string.strip($(this).val());
+
+          var value = _.string.strip(el.val());
+          e.preventDefault();
+          if (!value) return;
+          var type_of = typeof sim_config[property_name];
+          animateSubmit(this);
+          if (type_of == "boolean") {
+            sim_config[property_name] = el.prop("checked");
           }
         };
       })(k)
@@ -573,6 +571,14 @@ var populate_controls = function(controls_element, sim_config) {
     $(
       "<div class='control-wrapper instructions-cell'>" + 
         "<span>Click and drag to move points. Hold shift and drag to create points. Press enter after editing a field.</span>" + 
+      "</div>"
+    )
+  );
+
+  controls_element.append(
+    $(
+      "<div class='control-wrapper'>" + 
+        "<span>Current points: </span><span id='total-point-count'></span>" + 
       "</div>"
     )
   );
@@ -638,6 +644,20 @@ canvas.addEventListener("keydown", handle_key_down, false);
 canvas.addEventListener("mousemove", handle_mouse_move, false);
 canvas.addEventListener("mouseout", handle_mouse_out, false);
 canvas.addEventListener("mouseover", handle_mouse_over, false);
+
+// Prevent backspace from going back in browser history:
+$(function(){
+
+    var rx = /INPUT|SELECT|TEXTAREA/i;
+
+    $(document).bind("keydown keypress", function(e){
+        if( e.which == 8 ){ // 8 == backspace
+            if(!rx.test(e.target.tagName) || e.target.disabled || e.target.readOnly ){
+                e.preventDefault();
+            }
+        }
+    });
+});
 
 // Initially fill the screen with a color to prevent trails problem we were experiencing
 context.fillStyle = "green";
